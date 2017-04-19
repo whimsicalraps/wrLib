@@ -1,7 +1,7 @@
 #ifndef __wr_lpgate__
 #define __wr_lpgate__
 
-// #include <stm32f7xx.h>
+#include <stm32f7xx.h>
 
 #define LOG_VOL_CONST 	(0.1/1.1)
 #define HPF_COEFF		(0.997)
