@@ -1,5 +1,5 @@
-#ifndef __wrConsts__
-#define __wrConsts__
+#ifndef __wrGlobals__
+#define __wrGlobals__
 
 #define HALF24f 4194304.0f
 #define MAX24f 8388607.0f
