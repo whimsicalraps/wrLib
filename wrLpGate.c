@@ -1,5 +1,5 @@
 #include "wrLpGate.h"
-
+ 
 void lpgate_init( lpgate_t* self, uint8_t hpf, uint8_t filter, uint16_t b_size )
 {
 	self->hpf = hpf;

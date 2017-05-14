@@ -1,7 +1,6 @@
-#ifndef __wrMath__
-#define __wrMath__
+#pragma once
 
-#include <stm32f7xx.h>
+#include <stdint.h>
 #include "wrGlobals.h"
 
 // FLOAT
@@ -80,5 +79,3 @@ uint8_t max_u8(uint8_t a, uint8_t b); // returns the higher of two u8
 	void AND_v8_8(uint8_t* a, uint8_t mask, uint8_t* out, uint16_t size); // AND vector w mask
 	void SHL_v8_8(uint8_t* a, uint8_t shift, uint8_t* out, uint16_t size); // left SHIFT vector by constant
 	void SHR_v8_8(uint8_t* a, uint8_t shift, uint8_t* out, uint16_t size); // right SHIFT vector by constant
-
-#endif

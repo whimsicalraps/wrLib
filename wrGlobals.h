@@ -1,5 +1,4 @@
-#ifndef __wrGlobals__
-#define __wrGlobals__
+#pragma once
 
 #define HALF24f 4194304.0f
 #define MAX24f 8388607.0f
@@ -12,5 +11,3 @@
 #define nFloor 0.00024 // -72dB
 #define nFloorSub1 (1 - nFloor) // -0.01dB?
 #define nMAX24f 0xFF800000
-
-#endif
