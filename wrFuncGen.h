@@ -1,7 +1,6 @@
-#ifndef _wr_FUNC_GEN_
-#define _wr_FUNC_GEN_
+#pragma once
 
-#include <stm32f7xx.h>
+#include <stdint.h>
 
 typedef struct func_gen{
 	int8_t    go;
@@ -29,5 +28,3 @@ float function_step( func_gen_t* self );
 // void function_v( trig_state[j], process[0], process[j] );
 
 float function_lookup( float id );
-
-#endif
