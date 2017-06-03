@@ -1,33 +1,28 @@
 #include "wrMath.h"
 
-// this one seems to have problems? perhaps a priority issue? causing glitches once per block_size
 float max_f(float a, float b) {
-	float out;
-
-	if(a>b) { out = a; } // a is greater, return a
-	else { out = b; } // a is not greater, return b
-
-	return out;
+	return (a > b ? a : b);
 }
 
 float min_f(float a, float b) {
-	float out;
-
-	if(a<b) { out = a; } // a is less, return a
-	else { out = b; } // a is not less, return b
-
-	return out;
+	return (a < b ? a : b);
 }
 
-float lim_f(float in, float min, float max) {
-	float out;
-
-	if(in<min) { out = min; } // lower limit
-	else if(in>max) { out = max; } // upper limit
-	else { out = in; } // echo in range
-
-	return out;
+float lim_f(float in, float min, float max)
+{
+	return (in < min ? min : in > max ? max : in);
 }
+
+float lim_f_0_1(float in)
+{
+	return (in < 0.0 ? 0.0 : in > 1.0 ? 1.0 : in);
+}
+
+float lim_f_n1_1(float in)
+{
+	return (in < -1.0 ? -1.0 : in > 1.0 ? 1.0 : in);
+}
+
 float wrap_f(float in, float min, float max) {
 	float diff = max - min;
 
@@ -48,13 +43,7 @@ float interp_lin_f_2d(float in1_x, float in2_x,
 	return (tmp + mix_y*(tmp2 - tmp));
 }
 int32_t lim_i32(int32_t in, int32_t min, int32_t max) {
-	int32_t out;
-
-	if(in<min) { out = min; } // lower limit
-	else if(in>max) { out = max; } // upper limit
-	else { out = in; } // echo in range
-
-	return out;
+	return (in < min ? min : in > max ? max : in);
 }
 int32_t wrap_i32(int32_t in, int32_t min, int32_t max) {
 	int32_t diff = max - min;
@@ -65,28 +54,13 @@ int32_t wrap_i32(int32_t in, int32_t min, int32_t max) {
 	return in;
 }
 int16_t min_u16(uint16_t a, uint16_t b) {
-	uint16_t out;
-
-	if(a<b) { out = a; } // a is less, return a
-	else { out = b; } // a is not less, return b
-
-	return out;
+	return (a < b ? a : b);
 }
 uint8_t min_u8(uint8_t a, uint8_t b) {
-	uint8_t out;
-
-	if(a<b) { out = a; } // a is less, return a
-	else { out = b; } // a is not less, return b
-
-	return out;
+	return (a < b ? a : b);
 }
 uint8_t max_u8(uint8_t a, uint8_t b) {
-	uint8_t out;
-
-	if(a>b) { out = a; } // a is less, return a
-	else { out = b; } // a is not less, return b
-
-	return out;
+	return (a > b ? a : b);
 }
 
 

@@ -7,6 +7,8 @@
 float max_f(float a, float b); // returns the higher of two floats
 float min_f(float a, float b); // returns the lower of two floats
 float lim_f(float in, float min, float max); // saturate
+float lim_f_0_1(float in); // saturate (0,1)
+float lim_f_n1_1(float in); // saturate (-1,1)
 float wrap_f(float in, float min, float max); // wrap within range (circular buf)
 float interp_lin_f(float in1, float in2, float mix); // linear interpolator
 float interp_lin_f_2d(float in1_x, float in2_x, float in1_y, float in2_y, float mix_x, float mix_y); // linear interpolator
