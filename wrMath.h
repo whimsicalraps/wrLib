@@ -3,6 +3,9 @@
 #include <stdint.h>
 #include <wrGlobals.h>
 
+// WEIRD FUNCTIONS
+float math_get_ramps( float skew, float* rise, float* fall );
+
 // FLOAT
 float max_f(float a, float b); // returns the higher of two floats
 float min_f(float a, float b); // returns the lower of two floats

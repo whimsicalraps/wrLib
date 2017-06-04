@@ -1,5 +1,16 @@
 #include <wrMath.h>
 
+// this function takes 0-1
+	// does a 1/x lookup with inverse
+	// particularly useful for ramp->tri->saw morphs
+		// where total time (pitch) remains stable
+// NB: 3 divisions. use a LUT if you're out of cycles
+float math_get_ramps( float skew, float* rise, float* fall )
+{
+	*rise = 0.5 / (0.998 * skew + 0.001);
+	*fall = 1/ (2- (1/ *rise));
+}
+
 float max_f(float a, float b) {
 	return (a > b ? a : b);
 }
