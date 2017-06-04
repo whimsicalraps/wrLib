@@ -1,4 +1,4 @@
-#include "wrMath.h"
+#include <wrMath.h>
 
 float max_f(float a, float b) {
 	return (a > b ? a : b);

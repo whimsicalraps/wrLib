@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#include "wrGlobals.h"
+#include <wrGlobals.h>
 
 // FLOAT
 float max_f(float a, float b); // returns the higher of two floats
