@@ -3,6 +3,26 @@
 #include <stdint.h>
 #include <wrGlobals.h>
 
+///////////////
+// ok, so rather than having tiny helper functions
+// instead they can be macros!
+// use an underscore and first Capital (camel) as a 'this is a macro!' warning
+// they type-agnostic! yay!
+//
+
+#define _Max(a, b) ((a) > (b) ? (a) : (b))
+#define _Min(a, b) ((a) < (b) ? (a) : (b))
+/*#define _Limit(in, min, max) (  \
+			(in) > (min)        \
+				? ((in) < (max) \
+					? (in)      \
+					: (max))    \
+				: (min))        \
+*/
+#define _Swap(a, b) { a ^= b; b ^= a; a ^= b; }
+
+///////////////////////////////////////////////////////
+
 // WEIRD FUNCTIONS
 float math_get_ramps( float skew, float* rise, float* fall );
 
