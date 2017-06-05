@@ -93,7 +93,6 @@ void vac_step_v( vactrol_t* self , float* out, uint16_t size)
 
 void vtl_init( vtl_env_t* self )
 {
-	self->ttime = 0;     // f
 	self->dest  = 0;     // f
 	self->id    = 0;     // f
 	self->mode  = 1;     // sustain mode
@@ -107,16 +106,21 @@ void vtl_mode( vtl_env_t* self, uint8_t md )
 	self->mode = md;
 }
 
-void vtl_prep( vtl_env_t* self, float slew, float att)
+uint8_t vtl_prep( vtl_env_t* self, float slew, float att)
 {
-	self->ttime = lim_f_0_1(slew);
+	float ttime = lim_f_0_1(slew);
 
 	math_get_ramps( lim_f_0_1(att),
 					&(self->rtime),
 					&(self->ftime));
 
-	self->rtime *= self->ttime;
-	self->ftime *= self->ttime;
+	// set rtn flag to signal prep has updated
+	float rt = self->rtime;
+	self->rtime *= ttime;
+	if( rt != self->rtime ) { return 0; }
+	
+	self->ftime *= ttime;
+	return 1; // changes!
 }
 
 // unroll this in your loop if calling it per sample (otherwise it's minor improvement)
