@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#include <wrGlobals.h>
+#include "wrGlobals.h"
 
 ///////////////
 // ok, so rather than having tiny helper functions

@@ -1,4 +1,4 @@
-#include <wrMath.h>
+#include "wrMath.h"
 
 // this function takes 0-1
 	// does a 1/x lookup with inverse
