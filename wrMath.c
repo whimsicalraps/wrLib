@@ -148,6 +148,15 @@ void lim_vf_f(float* in, float min, float max, float* out, uint16_t size) {
 	}
 }
 
+void lim_vf_audio(float* audio, uint16_t size)
+{
+	for(uint16_t i=0; i<size; i++) {
+		if(*audio < -1.0) { *audio++ = -1.0; } // lower limit
+		else if(*audio > 1.0) { *audio++ = 1.0; } // upper limit
+		else { audio++; } // don't change
+	}
+}
+
 // set an array to a single value
 void set_v32_32(int32_t b, int32_t* out, uint16_t size) {
 	int32_t* out2=out; // point to start of arrays
