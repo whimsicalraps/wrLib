@@ -272,6 +272,16 @@ void interp_lin_f_v(float* a, float* b, float* c, float* out, uint16_t size) {
 		*out2++ = *a2++ + *c2++ * (*b2++ - *a2);
 	}
 }
+
+void interp_lin_f_vvf(float* a, float* b, float c, float* out, uint16_t size) {
+	float* a2=a;
+	float* b2=b;
+	float* out2=out;
+
+	for(uint16_t i=0;i<size;i++) {
+		*out2++ = *a2++ + c * (*b2++ - *a2);
+	}
+}
 	//////////////////////////
 	//////////////// SET VALUE
 
