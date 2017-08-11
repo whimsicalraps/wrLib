@@ -9,7 +9,7 @@
 // use an underscore and first Capital (camel) as a 'this is a macro!' warning
 // they type-agnostic! yay!
 //
-
+#define _Abs(a)    (a < 0 ? -a : a)
 #define _Max(a, b) ((a) > (b) ? (a) : (b))
 #define _Min(a, b) ((a) < (b) ? (a) : (b))
 /*#define _Limit(in, min, max) (  \
@@ -56,6 +56,7 @@ uint8_t max_u8(uint8_t a, uint8_t b); // returns the higher of two u8
 	// LOGIC
 		// 42% @8, 44% @32
 	void lim_vf_f(float* in, float min, float max, float* out, uint16_t size);
+	void lim_vf_audio(float* audio, uint16_t size);
 
 	// ADD - MARGINALLY SLOWER
 	void add_vf_vf(float* a, float* b, float* sum, uint16_t size);
@@ -78,6 +79,7 @@ uint8_t max_u8(uint8_t a, uint8_t b); // returns the higher of two u8
 
 	// marginally slower
 	void interp_lin_f_v(float* a, float* b, float* c, float* out, uint16_t size);
+	void interp_lin_f_vvf(float* a, float* b, float c, float* out, uint16_t size);
 
 // int32_t
 	// LOGIC
