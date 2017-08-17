@@ -11,9 +11,9 @@
 // takes single param to time-scale the response
 void vac_init( vactrol_t* self)
 {
-	self->slew = 0; // speed
-	self->dest = 0; // destination
-	self->y = 0;    // current
+	self->slew = 0.0f; // speed
+	self->dest = 0.0f; // destination
+	self->y = 0.0f;    // current
 }
 
 void vac_time( vactrol_t* self, float slew)
@@ -61,7 +61,6 @@ void vac_step_v( vactrol_t* self , float* out, uint16_t size)
 	// always converging to self->dest, so each block stays on the same side
 	sub_diff = self->dest - self->y;
 
-
 	if(sub_diff > nFloor) {
 		slew_fix = 0.008f * self->slew; // if rising, set attack rate
 	} else if(sub_diff < -nFloor ) {
@@ -93,12 +92,12 @@ void vac_step_v( vactrol_t* self , float* out, uint16_t size)
 
 void vtl_init( vtl_env_t* self )
 {
-	self->dest  = 0;     // f
-	self->id    = 0;     // f
-	self->mode  = 1;     // sustain mode
-	self->vel   = 1.0;     // destination level, ignores zeroes
-	self->rtime = 0.5;
-	self->ftime = 0.5;
+	self->dest  = 0.0f;     // f
+	self->id    = 0.0f;     // f
+	self->mode  = 1;        // sustain mode
+	self->vel   = 1.0f;     // destination level, ignores zeroes
+	self->rtime = 0.5f;
+	self->ftime = 0.5f;
 }
 
 void vtl_mode( vtl_env_t* self, uint8_t md )
@@ -138,7 +137,7 @@ void vtl_reset( vtl_env_t* self, float dest)
 {
 	self->dest = dest; // set destination value
 	// self->vel = rest;
-	self->id = 0;
+	self->id = 0.0f;
 	if(dest > nFloor) {
 		self->vel = dest;
 	}
@@ -151,16 +150,15 @@ float vtl_get_id( vtl_env_t* self )
 
 float vtl_step( vtl_env_t* self )
 {
-
 	float slew_mod;
 	float location = self->id;
 
 	// difference between current & dest
 	float sub_diff = self->dest - self->id;
 
-	if(sub_diff > 0) { // rising
+	if(sub_diff > 0.0f) { // rising
 		slew_mod = self->rtime;
-		slew_mod = min_f(slew_mod + slew_mod * location * location * 2.0f, 0.2); // some kind of hysteresis: out += 2 * in * previous^2
+		slew_mod = min_f(slew_mod + slew_mod * location * location * 2.0f, 0.2f); // some kind of hysteresis: out += 2 * in * previous^2
 		self->id += slew_mod * sub_diff;
 
 
@@ -171,7 +169,7 @@ float vtl_step( vtl_env_t* self )
 		}
 	} else { // falling
 		slew_mod = self->ftime;
-		slew_mod = min_f(slew_mod + slew_mod * location * location * 2.0f, 0.2); // some kind of hysteresis: out += 2 * in * previous^2
+		slew_mod = min_f(slew_mod + slew_mod * location * location * 2.0f, 0.2f); // some kind of hysteresis: out += 2 * in * previous^2
 		self->id += slew_mod * sub_diff;
 
 		if(sub_diff > -nFloor) { // if we've gone past the dest
@@ -201,10 +199,10 @@ uint8_t vtl_step_v( vtl_env_t* self, float* out, uint16_t size)
 	// difference between current & dest
 	float sub_diff = self->dest - self->id;
 
-	if(sub_diff >= 0) { // rising
+	if(sub_diff >= 0.0f) { // rising
 		if(sub_diff < nFloor) { // call it even
 			if(self->mode != 1) { // not sustain
-				self->dest = 0; // go toward zero
+				self->dest = 0.0f; // go toward zero
 				slew_fix = self->ftime;
 			} else { // sustain mode, so hold val
 				// escape w/ fixed output value
@@ -249,7 +247,7 @@ uint8_t vtl_step_v( vtl_env_t* self, float* out, uint16_t size)
 
 	// some kind of hysteresis: out += 2 * in * previous^2
 	slew_mod = slew_fix + slew_fix * location * location * 2.0f;
-	if(slew_mod > 0.2) { slew_mod = 0.2; } // limit rate to 1/5 per samp
+	if(slew_mod > 0.2f) { slew_mod = 0.2f; } // limit rate to 1/5 per samp
 	*out2 = self->id + (slew_mod * sub_diff);
 
 
@@ -257,10 +255,10 @@ uint8_t vtl_step_v( vtl_env_t* self, float* out, uint16_t size)
 		// difference between current & dest
 		sub_diff = self->dest - *out2++;
 
-		if(sub_diff >= 0) { // rising
+		if(sub_diff >= 0.0f) { // rising
 			if(sub_diff < nFloor) { // call it even
 				if(self->mode != 1) { // not sustain
-					self->dest = 0; // go toward zero
+					self->dest = 0.0f; // go toward zero
 					slew_fix = self->ftime;
 				} else { // sustain mode, so hold val
 					// escape w/ fixed output value
@@ -304,7 +302,7 @@ uint8_t vtl_step_v( vtl_env_t* self, float* out, uint16_t size)
 
 		// some kind of hysteresis: out += 2 * in * previous^2
 		slew_mod = slew_fix + slew_fix * location * location * 2.0f;
-		if(slew_mod > 0.2) { slew_mod = 0.2; } // limit rate to 1/5 per samp
+		if(slew_mod > 0.2f) { slew_mod = 0.2f; } // limit rate to 1/5 per samp
 		*out2 = (*out3++) + (slew_mod * sub_diff);
 	}
 	// save
