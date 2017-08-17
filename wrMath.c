@@ -7,8 +7,8 @@
 // NB: 3 divisions. use a LUT if you're out of cycles
 float math_get_ramps( float skew, float* rise, float* fall )
 {
-	*rise = 0.5 / (0.998 * skew + 0.001);
-	*fall = 1/ (2- (1/ *rise));
+	*rise = 0.5f / (0.998f * skew + 0.001f);
+	*fall = 1.0f/ (2.0f - (1.0f / *rise));
 }
 
 float max_f(float a, float b) {
@@ -26,12 +26,12 @@ float lim_f(float in, float min, float max)
 
 float lim_f_0_1(float in)
 {
-	return (in < 0.0 ? 0.0 : in > 1.0 ? 1.0 : in);
+	return (in < 0.0f ? 0.0f : in > 1.0f ? 1.0f : in);
 }
 
 float lim_f_n1_1(float in)
 {
-	return (in < -1.0 ? -1.0 : in > 1.0 ? 1.0 : in);
+	return (in < -1.0f ? -1.0f : in > 1.0f ? 1.0f : in);
 }
 
 float wrap_f(float in, float min, float max) {
