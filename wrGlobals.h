@@ -10,7 +10,7 @@
 #define HALF24f     ((float)HALF24b)
 #define MAX24f      ((float)MAX24b)
 #define MAX24f2     ((float)MAX24b2)
-#define iMAX24f     (1 / MAX24f)
+#define iMAX24f     ((float)(1.0 / MAX24f))
 #define MIN24f      ((float)MIN24b)
 
 #define nFloor      0.00024 // -72dB
