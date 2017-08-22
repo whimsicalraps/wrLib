@@ -28,7 +28,7 @@ void vac_step_v( vactrol_t* self , float* out, uint16_t size);
 // variable speed & ∆rise/fall relationship
 void    vtl_init(   vtl_env_t* self);
 void    vtl_mode(   vtl_env_t* self, uint8_t md );
-uint8_t vtl_prep(   vtl_env_t* self, float slew, float att);
+void    vtl_prep(   vtl_env_t* self, float slew, float att);
 void    vtl_dest(   vtl_env_t* self, float dest);
 void    vtl_reset(  vtl_env_t* self, float dest);
 float   vtl_get_id( vtl_env_t* self );

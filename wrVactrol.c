@@ -105,20 +105,17 @@ void vtl_mode( vtl_env_t* self, uint8_t md )
 	self->mode = md;
 }
 
-uint8_t vtl_prep( vtl_env_t* self, float slew, float att)
+void vtl_prep( vtl_env_t* self, float slew, float att)
 {
 	// set rtn flag to signal prep has updated
 	float rt = self->rtime;
 	math_get_ramps( lim_f_0_1(att)
 		          , &(self->rtime)
 		          , &(self->ftime) );
-	float ttime = lim_f_0_1(slew);
+	float ttime = lim_f_0_1(slew) * 0.007f; // 0.5 = vtl5c3
+	ttime = lim_f(ttime, 0.000001f, 1.0f); // what is crashing?
 	self->rtime *= ttime;
-	// this is not a reliable way to check for change!
-	if( rt == self->rtime ) { return 0; }
-	
 	self->ftime *= ttime;
-	return 1; // changes!
 }
 
 // unroll this in your loop if calling it per sample (otherwise it's minor improvement)
