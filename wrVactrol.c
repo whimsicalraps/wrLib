@@ -107,16 +107,15 @@ void vtl_mode( vtl_env_t* self, uint8_t md )
 
 uint8_t vtl_prep( vtl_env_t* self, float slew, float att)
 {
-	float ttime = lim_f_0_1(slew);
-
+	// set rtn flag to signal prep has updated
+	float rt = self->rtime;
 	math_get_ramps( lim_f_0_1(att)
 		          , &(self->rtime)
 		          , &(self->ftime) );
-
-	// set rtn flag to signal prep has updated
-	float rt = self->rtime;
+	float ttime = lim_f_0_1(slew);
 	self->rtime *= ttime;
-	if( rt != self->rtime ) { return 0; }
+	// this is not a reliable way to check for change!
+	if( rt == self->rtime ) { return 0; }
 	
 	self->ftime *= ttime;
 	return 1; // changes!
