@@ -109,9 +109,9 @@ uint8_t vtl_prep( vtl_env_t* self, float slew, float att)
 {
 	float ttime = lim_f_0_1(slew);
 
-	math_get_ramps( lim_f_0_1(att),
-					&(self->rtime),
-					&(self->ftime));
+	math_get_ramps( lim_f_0_1(att)
+		          , &(self->rtime)
+		          , &(self->ftime) );
 
 	// set rtn flag to signal prep has updated
 	float rt = self->rtime;
@@ -158,7 +158,8 @@ float vtl_step( vtl_env_t* self )
 
 	if(sub_diff > 0.0f) { // rising
 		slew_mod = self->rtime;
-		slew_mod = min_f(slew_mod + slew_mod * location * location * 2.0f, 0.2f); // some kind of hysteresis: out += 2 * in * previous^2
+		slew_mod = min_f( slew_mod + slew_mod * location * location * 2.0f
+		                , 0.2f); // some kind of hysteresis: out += 2 * in * previous^2
 		self->id += slew_mod * sub_diff;
 
 
@@ -169,7 +170,8 @@ float vtl_step( vtl_env_t* self )
 		}
 	} else { // falling
 		slew_mod = self->ftime;
-		slew_mod = min_f(slew_mod + slew_mod * location * location * 2.0f, 0.2f); // some kind of hysteresis: out += 2 * in * previous^2
+		slew_mod = min_f( slew_mod + slew_mod * location * location * 2.0f
+		                , 0.2f); // some kind of hysteresis: out += 2 * in * previous^2
 		self->id += slew_mod * sub_diff;
 
 		if(sub_diff > -nFloor) { // if we've gone past the dest
