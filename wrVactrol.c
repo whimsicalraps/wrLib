@@ -179,131 +179,99 @@ float vtl_step( vtl_env_t* self )
 	return self->id; // needs to be limited to 0-1f
 }
 
-uint8_t vtl_step_v( vtl_env_t* self, float* out, uint16_t size)
+void vtl_step_v( vtl_env_t* self, float* out, uint16_t size)
 {
 	float slew_mod, slew_fix, location;
 	float* out2=out;
 	float* out3=out;
 	uint16_t i;
 
-
-
-
-	// never getting into return loops
-
-
-
-
 	// difference between current & dest
 	float sub_diff = self->dest - self->id;
 
-	if(sub_diff >= 0.0f) { // rising
-		if(sub_diff < nFloor) { // call it even
-			if(self->mode != 1) { // not sustain
+	if( sub_diff > 0.0f ){ // rising
+		if( sub_diff < nFloor ) { // call it even
+			if( self->mode != 1 ){ // not sustain
 				self->dest = 0.0f; // go toward zero
 				slew_fix = self->ftime;
 			} else { // sustain mode, so hold val
 				// escape w/ fixed output value
-				for(i=0; i<size; i++) {
+				for( i=0; i<size; i++ ){
 					*out2++ = self->dest;
 				}
 				self->id = self->dest; // save last val
-				return 1; // EARLY EXIT
+				return; // EARLY EXIT
 			}
 		} else { // normal rise
 			slew_fix = self->rtime;
 		}
 	} else { // falling
-
-		// NEED TO ACCOUNT FOR SEQUENTIAL, but LOWER TRIGGER WHILE FALLING
-		// SHOULDN'T STOP, BUT RATHER CONTINUE DOWN (it won't have hit zero yet)
-
-		if(sub_diff > -nFloor) { // call it even
-			if(self->mode == 2) { // cycle mode
+		if( sub_diff > -nFloor ){ // call it even
+			if( self->mode == 2 ){ // cycle mode
 				self->dest = self->vel; // go to rise
 				slew_fix = self->rtime;
 			} else { // hit bottom
-				
-				// fix me: need to check if self->dest is zero, else continue
-
-				for(i=0;i<size;i++) {
+				for( i=0; i<size; i++ ){
 					*out2++ = self->dest;
 				}
 				self->id = self->dest;
-				return 2; // EARLY EXIT
+				return; // EARLY EXIT
 			}
 		} else { // normal falling
 			slew_fix = self->ftime;
 		}
 	}
 
-	// avoid denormal zone with vals near silence
-	// NB: stm32f4+ already have HW support for handling denormals?!
-	/*if( self->id < nFloor ) {
-		location = nFloor;
-	} else {*/ location = self->id; //}
+	location = self->id;
 
 	// some kind of hysteresis: out += 2 * in * previous^2
 	slew_mod = slew_fix + slew_fix * location * location * 2.0f;
 	if(slew_mod > 0.2f) { slew_mod = 0.2f; } // limit rate to 1/5 per samp
-	*out2 = self->id + (slew_mod * sub_diff);
+	*out2++ = self->id + (slew_mod * sub_diff);
 
+	for( i=1; i<size; i++ ){
+		
+		sub_diff = self->dest - *out3;
 
-	for(i=1; i<size; i++) {
-		// difference between current & dest
-		sub_diff = self->dest - *out2++;
-
-		if(sub_diff >= 0.0f) { // rising
-			if(sub_diff < nFloor) { // call it even
-				if(self->mode != 1) { // not sustain
+		if( sub_diff > 0.0f ){ // rising
+			if( sub_diff < nFloor ){ // call it even
+				if( self->mode != 1 ){ // not sustain
 					self->dest = 0.0f; // go toward zero
 					slew_fix = self->ftime;
 				} else { // sustain mode, so hold val
-					// escape w/ fixed output value
-					for(i; i<size; i++) {
+					for( i; i<size; i++ ){
 						*out2++ = self->dest;
 					}
 					self->id = self->dest; // save last val
-					return 3; // EARLY EXIT
+					return; // EARLY EXIT
 				}
 			} else { // normal rise
 				slew_fix = self->rtime;
 			}
 		} else { // falling
-
-			// NEED TO ACCOUNT FOR SEQUENTIAL, but LOWER TRIGGER WHILE FALLING
-			// SHOULDN'T STOP, BUT RATHER CONTINUE DOWN (it won't have hit zero yet)
-
 			if(sub_diff > -nFloor) { // call it even
 				if(self->mode == 2) { // cycle mode
 					self->dest = self->vel; // go to rise
 					slew_fix = self->rtime;
 				} else { // hit bottom
-					
-					// fix me: need to check if self->dest is zero, else continue
-
-					for(i;i<size;i++) {
+					for( i; i<size; i++ ){
 						*out2++ = self->dest;
 					}
 					self->id = self->dest;
-					return 4; // EARLY EXIT
+					return; // EARLY EXIT
 				}
 			} else { // normal falling
 				slew_fix = self->ftime;
 			}
 		}
 
-		// avoid denormal zone with vals near silence
-		if( *out3 < nFloor ) {
-			location = nFloor;
-		} else { location = *out3; }
+		location = *out3;
 
-		// some kind of hysteresis: out += 2 * in * previous^2
 		slew_mod = slew_fix + slew_fix * location * location * 2.0f;
 		if(slew_mod > 0.2f) { slew_mod = 0.2f; } // limit rate to 1/5 per samp
-		*out2 = (*out3++) + (slew_mod * sub_diff);
+		*out2++ = (*out3++) + (slew_mod * sub_diff);
 	}
 	// save
 	self->id = *out3;
-	return 0;
+	return;
 }

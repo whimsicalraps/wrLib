@@ -33,4 +33,4 @@ void    vtl_dest(   vtl_env_t* self, float dest);
 void    vtl_reset(  vtl_env_t* self, float dest);
 float   vtl_get_id( vtl_env_t* self );
 float   vtl_step(   vtl_env_t* self );
-uint8_t vtl_step_v( vtl_env_t* self , float* out, uint16_t size);
+void  vtl_step_v( vtl_env_t* self , float* out, uint16_t size);
