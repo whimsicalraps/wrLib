@@ -13,8 +13,8 @@
 #define iMAX24f     ((float)(1.0 / MAX24f))
 #define MIN24f      ((float)MIN24b)
 
-#define nFloor      0.00024 // -72dB
-#define nFloorSub1  (1 - nFloor) // -0.01dB?
+#define nFloor      ((float)0.00024) // -72dB
+#define nFloorSub1  ((float)(1.0f - nFloor)) // -0.01dB?
 #define nMAX24f     ((float)0xFF800000)
 
-#define WR_PI       3.14159265358979323846264
+#define WR_PI       ((float)3.14159265358979323846264)
