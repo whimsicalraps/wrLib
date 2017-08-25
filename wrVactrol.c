@@ -181,7 +181,7 @@ float vtl_step( vtl_env_t* self )
 
 void vtl_step_v( vtl_env_t* self, float* out, uint16_t size)
 {
-	float slew_mod, slew_fix, location;
+	float slew_mod, slew_fix;
 	float* out2=out;
 	float* out3=out;
 	uint16_t i;
@@ -208,8 +208,13 @@ void vtl_step_v( vtl_env_t* self, float* out, uint16_t size)
 	} else { // falling
 		if( sub_diff > -nFloor ){ // call it even
 			if( self->mode == 2 ){ // cycle mode
-				self->dest = self->vel; // go to rise
-				slew_fix = self->rtime;
+				if (self->dest == self->vel){ // AT MAX!
+					self->dest = 0.0f; // go to fall
+					slew_fix = self->ftime;
+				} else { // go to rise
+					self->dest = self->vel;
+					slew_fix = self->rtime;
+				}
 			} else { // hit bottom
 				for( i=0; i<size; i++ ){
 					*out2++ = self->dest;
@@ -222,10 +227,8 @@ void vtl_step_v( vtl_env_t* self, float* out, uint16_t size)
 		}
 	}
 
-	location = self->id;
-
 	// some kind of hysteresis: out += 2 * in * previous^2
-	slew_mod = slew_fix + slew_fix * location * location * 2.0f;
+	slew_mod = slew_fix + slew_fix * self->id * self->id * 2.0f;
 	if(slew_mod > 0.2f) { slew_mod = 0.2f; } // limit rate to 1/5 per samp
 	*out2++ = self->id + (slew_mod * sub_diff);
 
@@ -250,9 +253,14 @@ void vtl_step_v( vtl_env_t* self, float* out, uint16_t size)
 			}
 		} else { // falling
 			if(sub_diff > -nFloor) { // call it even
-				if(self->mode == 2) { // cycle mode
-					self->dest = self->vel; // go to rise
-					slew_fix = self->rtime;
+				if( self->mode == 2 ){ // cycle mode
+					if (self->dest == self->vel){ // AT MAX!
+						self->dest = 0.0f; // go to fall
+						slew_fix = self->ftime;
+					} else { // go to rise
+						self->dest = self->vel;
+						slew_fix = self->rtime;
+					}
 				} else { // hit bottom
 					for( i; i<size; i++ ){
 						*out2++ = self->dest;
@@ -265,9 +273,7 @@ void vtl_step_v( vtl_env_t* self, float* out, uint16_t size)
 			}
 		}
 
-		location = *out3;
-
-		slew_mod = slew_fix + slew_fix * location * location * 2.0f;
+		slew_mod = slew_fix + slew_fix * *out3 * *out3 * 2.0f;
 		if(slew_mod > 0.2f) { slew_mod = 0.2f; } // limit rate to 1/5 per samp
 		*out2++ = (*out3++) + (slew_mod * sub_diff);
 	}
