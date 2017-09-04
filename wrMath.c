@@ -42,6 +42,16 @@ float wrap_f(float in, float min, float max) {
 
 	return in;
 }
+
+float interp_lin_asm(float in1, float in2, float mix)
+{
+	// accurate at min & max. arm cortex m4 instruction set
+	__asm__(
+		"vfnms.f32  s0, s0, s2 \n\t"
+		"vfnms.f32  s0, s1, s2 \n\t"
+		);
+}
+
 float interp_lin_f(float in1, float in2, float mix) {
 	return (in1 + mix * (in2 - in1));
 }
