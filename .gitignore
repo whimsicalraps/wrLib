@@ -6,6 +6,7 @@
 *.obj
 *.elf
 *.dmp
+*.d
 
 # Precompiled Headers
 *.gch
