@@ -27,6 +27,11 @@ void poly_init( poly_alloc_t* self
 	self->free_count  = voice_count;
 	self->free_first  = 0;
 	self->free_queue  = malloc(sizeof(uint8_t) * voice_count);
+	for( uint8_t i=0; i<voice_count; i++ ){
+		self->notes[i]      = 0x8000;
+		self->busy_list[i]  = 255;
+		self->free_queue[i] = 255;
+	}
 }
 
 int8_t poly_assign_note( poly_alloc_t* self
