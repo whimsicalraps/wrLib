@@ -103,6 +103,9 @@ void vtl_init( vtl_env_t* self )
 void vtl_mode( vtl_env_t* self, uint8_t md )
 {
 	self->mode = md;
+	if(md != 1){ // not sustain mode
+		self->dest = 0.0f;
+	}
 }
 
 void vtl_prep( vtl_env_t* self, float slew, float att)
