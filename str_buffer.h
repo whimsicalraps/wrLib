@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdio.h>
+#include <stdint.h>
 
 typedef struct str_buffer{
 	uint8_t* contents;
