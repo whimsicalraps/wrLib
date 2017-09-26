@@ -63,6 +63,17 @@ float interp_lin_f_2d(float in1_x, float in2_x,
 	tmp2 = in1_y + mix_x*(in2_y - in1_y);
 	return (tmp + mix_y*(tmp2 - tmp));
 }
+
+int32_t lim_i24_audio( int32_t in )
+{
+	return ( (in < (int32_t)MIN24b)
+				? (int32_t)MIN24b
+				: (in > (int32_t)MAX24b)
+					? (int32_t)MAX24b
+					: in
+		   );
+}
+
 int32_t lim_i32(int32_t in, int32_t min, int32_t max) {
 	return (in < min ? min : in > max ? max : in);
 }

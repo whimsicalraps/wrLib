@@ -20,6 +20,10 @@
 				: (min))        \
 */
 #define _Swap(a, b) { a ^= b; b ^= a; a ^= b; }
+#define _Lim01(a) ((a > 1) ? 1 : ((a < 0) ? 0 : a ))
+#define _Lim(a,min,max) ((a > max) ? max : ((a < min) ? min : a ))
+
+#define _GetFract(a) ( a - (float)(int)a )
 
 ///////////////////////////////////////////////////////
 
@@ -33,11 +37,12 @@ float lim_f(float in, float min, float max); // saturate
 float lim_f_0_1(float in); // saturate (0,1)
 float lim_f_n1_1(float in); // saturate (-1,1)
 float wrap_f(float in, float min, float max); // wrap within range (circular buf)
-float interp_lin_asm(float in1, float in2, float mix); // linear interpolator
+//float interp_lin_asm(float in1, float in2, float mix); // linear interpolator
 float interp_lin_f(float in1, float in2, float mix); // linear interpolator
 float interp_lin_f_2d(float in1_x, float in2_x, float in1_y, float in2_y, float mix_x, float mix_y); // linear interpolator
 
 // INT32 (signed)
+int32_t lim_i24_audio(int32_t in); // upper & lower bound limit for signed 32b int
 int32_t lim_i32(int32_t in, int32_t min, int32_t max); // upper & lower bound limit for signed 32b int
 int32_t wrap_i32(int32_t in, int32_t min, int32_t max); // wrap within range (circular buf)
 
