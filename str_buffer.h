@@ -4,9 +4,9 @@
 #include <stdint.h>
 
 typedef struct str_buffer{
-	uint8_t* contents;
-	int16_t ix_read;
-	int16_t ix_write;
+	char*    contents;
+	int16_t  ix_read;
+	int16_t  ix_write;
 	uint16_t length;
 	uint16_t count;
 } str_buffer_t;
