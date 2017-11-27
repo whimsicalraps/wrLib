@@ -23,6 +23,7 @@
 #define _Lim01(a) ((a > 1) ? 1 : ((a < 0) ? 0 : a ))
 #define _Lim(a,min,max) ((a > max) ? max : ((a < min) ? min : a ))
 
+// WARNING: doesn't work for negative numbers
 #define _GetFract(a) ( a - (float)(int)a )
 
 ///////////////////////////////////////////////////////
