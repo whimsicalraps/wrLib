@@ -29,7 +29,7 @@
 ///////////////////////////////////////////////////////
 
 // WEIRD FUNCTIONS
-float math_get_ramps( float skew, float* rise, float* fall );
+void math_get_ramps( float skew, float* rise, float* fall );
 
 // FLOAT
 float max_f(float a, float b); // returns the higher of two floats
