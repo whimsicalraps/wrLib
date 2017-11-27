@@ -5,7 +5,7 @@
 	// particularly useful for ramp->tri->saw morphs
 		// where total time (pitch) remains stable
 // NB: 3 divisions. use a LUT if you're out of cycles
-float math_get_ramps( float skew, float* rise, float* fall )
+void math_get_ramps( float skew, float* rise, float* fall )
 {
 	*rise = 0.5f / (0.998f * skew + 0.001f);
 	*fall = 1.0f/ (2.0f - (1.0f / *rise));
