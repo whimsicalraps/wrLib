@@ -107,11 +107,11 @@ void lim_v32_32(int32_t* in, int32_t min, int32_t max, int32_t* out, uint16_t si
 	for(uint16_t i=0; i<size; i++) {
 		if(*in2 < min) {
 			*out2++ = min; // lower limit
-			*in2++;
+			in2++;
 		}
 		else if(*in2 > max) {
 			*out2++ = max; // upper limit
-			*in2++;
+			in2++;
 		}
 		else {
 			*out2++ = *in2++; // echo in range
@@ -132,7 +132,7 @@ void add_v32_v32_sat24(int32_t* a, int32_t* b, int32_t* out, uint16_t size){
 		else if(*out2 > MAX24b) {
 			*out2++ = MAX24b; // upper limit
 		}
-		else { *out2++; }
+		else { out2++; }
 	}
 }
 
@@ -152,7 +152,7 @@ void muladd_v32_f_v32_sat24(int32_t* in, float mul, int32_t* add, int32_t* out, 
 		else if(*out2 > MAX24b) {
 			*out2++ = MAX24b; // upper limit
 		}
-		else { *out2++; }
+		else { out2++; }
 	}
 }
 
@@ -165,7 +165,7 @@ void lim_vf_f(float* in, float min, float max, float* out, uint16_t size) {
 		if(*in2 < min) { *out2++ = min; } // lower limit
 		else if(*in2 > max) { *out2++ = max; } // upper limit
 		else { *out2++ = *in2; } // echo in range
-		*in2++;
+		in2++;
 	}
 }
 
@@ -290,7 +290,8 @@ void interp_lin_f_v(float* a, float* b, float* c, float* out, uint16_t size) {
 	float* out2=out;
 
 	for(uint16_t i=0;i<size;i++) {
-		*out2++ = *a2++ + *c2++ * (*b2++ - *a2);
+		*out2++ = *a2 + *c2++ * (*b2++ - *a2);
+		a2++;
 	}
 }
 
@@ -300,7 +301,8 @@ void interp_lin_f_vvf(float* a, float* b, float c, float* out, uint16_t size) {
 	float* out2=out;
 
 	for(uint16_t i=0;i<size;i++) {
-		*out2++ = *a2++ + c * (*b2++ - *a2);
+		*out2++ = *a2 + c * (*b2++ - *a2);
+		a2++;
 	}
 }
 	//////////////////////////
