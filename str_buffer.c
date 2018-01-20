@@ -17,6 +17,12 @@ int8_t str_buffer_init(str_buffer_t* buf, uint16_t len)
 	return err;
 }
 
+void str_buffer_deinit( str_buffer_t* buf )
+{
+	free( buf->contents );
+	buf->contents = NULL;
+}
+
 void str_buffer_enqueue(str_buffer_t* buf, char* s)
 {
 	while(*s) { // until we reach a NULL
