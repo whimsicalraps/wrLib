@@ -49,3 +49,8 @@ uint16_t str_buffer_len(str_buffer_t* buf)
 	}
 	return ret_len;
 }
+
+uint8_t str_buffer_empty(str_buffer_t* buf)
+{
+	return (!buf->count);
+}

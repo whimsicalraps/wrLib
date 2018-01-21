@@ -16,3 +16,4 @@ void str_buffer_deinit( str_buffer_t* buf );
 void str_buffer_enqueue(str_buffer_t* buf, char* s);
 char* str_buffer_dequeue(str_buffer_t* buf, uint16_t size);
 uint16_t str_buffer_len(str_buffer_t* buf);
+uint8_t str_buffer_empty(str_buffer_t* buf);
