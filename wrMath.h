@@ -9,7 +9,7 @@
 // use an underscore and first Capital (camel) as a 'this is a macro!' warning
 // they type-agnostic! yay!
 //
-#define _Abs(a)    (a < 0 ? -a : a)
+#define _Abs(a)    (a < 0 ? -(a) : a)
 #define _Max(a, b) ((a) > (b) ? (a) : (b))
 #define _Min(a, b) ((a) < (b) ? (a) : (b))
 /*#define _Limit(in, min, max) (  \
