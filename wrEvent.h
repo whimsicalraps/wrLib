@@ -10,9 +10,9 @@ typedef enum etrig
     , tr_p_negative = 1
     , tr_p_same     = 2
     , tr_p_positive = 3
-    , tr_n_negative = 4
-    , tr_n_same     = 5
-    , tr_n_positive = 6
+    , tr_n_negative = 5 // as for 1-3 w/ b3 masked negative
+    , tr_n_same     = 6
+    , tr_n_positive = 7
     } etrig_t;
 
 typedef struct event_extract {
