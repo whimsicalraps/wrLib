@@ -436,3 +436,11 @@ void SHRadd_v32_32(int32_t* a, uint16_t shift, int32_t add, int32_t* out, uint16
 		*out2++ = ((*a2++) >> shift) + add;
 	}	
 }
+
+
+int16_t max_s16( int16_t a, int16_t b )
+{
+    return (( a < b )
+                ? a
+                : b );
+}

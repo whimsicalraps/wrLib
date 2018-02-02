@@ -49,6 +49,7 @@ int32_t wrap_i32(int32_t in, int32_t min, int32_t max); // wrap within range (ci
 
 // INT16
 int16_t min_u16(uint16_t a, uint16_t b); // returns the lower of two 16b
+int16_t max_s16( int16_t a, int16_t b );
 
 // UINT8
 uint8_t min_u8(uint8_t a, uint8_t b); // returns the lower of two u8
