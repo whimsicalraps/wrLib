@@ -10,6 +10,7 @@ typedef enum etrig
     , tr_p_negative = 1
     , tr_p_same     = 2
     , tr_p_positive = 3
+    , tr_hold       = 4
     , tr_n_negative = 5 // as for 1-3 w/ b3 masked negative
     , tr_n_same     = 6
     , tr_n_positive = 7
@@ -27,7 +28,7 @@ typedef struct event_extract {
    // state
    int8_t  hyst;          // hysteresis
    float   in_history[EXTRACT_HIST_LENGTH]; // input history
-   etrig_t tr_state;      // the output
+   int8_t  gate_state;    // +/-1 if gate is high/low, else 0
 } event_extract_t;
 
 // variable speed

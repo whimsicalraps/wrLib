@@ -24,7 +24,7 @@ event_extract_t* Extract_init( void )
    for( uint8_t i=0; i<EXTRACT_HIST_LENGTH; i++ ){
       e->in_history[i] = 0.0;
    }
-   e->tr_state = tr_none;
+   e->gate_state = 0;
 
    return e;
 }
@@ -35,39 +35,53 @@ void Extract_deinit( event_extract_t* e )
 }
 etrig_t Extract_cv_trigger( event_extract_t* e, float in )
 {
+   etrig_t retval = tr_none;
+
    if( e->hyst == 0 ){
-      if( in > (e->in_history[0] + e->tr_rel_level)
-       && in > e->tr_abs_level ){
-         // trigger high
-         // replace these conditionals with some integer math
-         // shift the cv, scale, then cast, then lookup in tr_t
-         if( e->in_history[0] > e->cv_thresh_same ){
-            e->tr_state = tr_p_positive;
-         } else if( e->in_history[0] < -(e->cv_thresh_opp) ){
-            e->tr_state = tr_p_negative;
+      if( e->gate_state == 0 ){
+         if( in > (e->in_history[0] + e->tr_rel_level)
+          && in > e->tr_abs_level ){
+            // trigger high
+            // replace these conditionals with some integer math
+            // shift the cv, scale, then cast, then lookup in tr_t
+            if( e->in_history[0] > e->cv_thresh_same ){
+               retval = tr_p_positive;
+            } else if( e->in_history[0] < -(e->cv_thresh_opp) ){
+               retval = tr_p_negative;
+            } else {
+               retval = tr_p_same;
+            }
+            e->gate_state = 1;
+            e->hyst = e->hyst_time;
+         } else if( in < (e->in_history[0] - e->tr_rel_level)
+                 && in < -(e->tr_abs_level) ){
+            // trigger low
+            if( e->in_history[0] > e->cv_thresh_opp ){
+               retval = tr_n_positive;
+            } else if( e->in_history[0] < -(e->cv_thresh_same) ){
+               retval = tr_n_negative;
+            } else {
+               retval = tr_n_same;
+            }
+            e->gate_state = -1;
+            e->hyst = e->hyst_time;
          } else {
-            e->tr_state = tr_p_same;
+            // no trigger -> gate-state unchanged
+            retval = tr_none;
          }
-         e->hyst = e->hyst_time;
-      } else if( in < (e->in_history[0] - e->tr_rel_level)
-              && in < -(e->tr_abs_level) ){
-         // trigger low
-         if( e->in_history[0] > e->cv_thresh_opp ){
-            e->tr_state = tr_n_positive;
-         } else if( e->in_history[0] < -(e->cv_thresh_same) ){
-            e->tr_state = tr_n_negative;
+      } else { // gate_state is HIGH
+         if( in < e->tr_abs_level
+          && in > -(e->tr_abs_level) ){
+            retval        = tr_none;
+            e->gate_state = 0; // release
+            e->hyst       = e->hyst_time;
          } else {
-            e->tr_state = tr_n_same;
+             retval = tr_hold; // still holding!
          }
-         e->hyst = e->hyst_time;
-      } else {
-         // no trigger
-         e->tr_state = tr_none;
       }
    } else {
-      // Debug_USART_putn8(e->hyst);
       e->hyst--; if( e->hyst < 0 ){ e->hyst = 0; }
-      e->tr_state = tr_none;
+      retval = tr_hold;
    }
 
    // circular buffer
@@ -75,5 +89,5 @@ etrig_t Extract_cv_trigger( event_extract_t* e, float in )
       e->in_history[i] = e->in_history[i+1];
    }  e->in_history[EXTRACT_HIST_LENGTH - 1] = in;
 
-   return e->tr_state;
+   return retval;
 }
