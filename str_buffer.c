@@ -7,7 +7,9 @@ int8_t str_buffer_init(str_buffer_t* buf, uint16_t len)
 	int8_t err = 0;
 	buf->contents = malloc(sizeof(char) * len+1);
 	if( buf->contents == NULL){ err = 1; }
-	buf->contents[len] = 0; // null terminate n+1
+	for( uint16_t i=0; i<(len+1); i++ ){
+		buf->contents[i] = 0; // all nulls
+	}
 	// empty when read == write ix
 	buf->ix_read = 0;
 	buf->ix_write = 0;
