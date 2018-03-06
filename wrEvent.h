@@ -18,7 +18,6 @@ typedef enum etrig
 
 typedef struct event_extract {
    // parameters
-   uint8_t history_length;
    int8_t  hyst_time;
    float   tr_abs_level;
    float   tr_rel_level;
