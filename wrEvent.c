@@ -40,7 +40,7 @@ etrig_t Extract_cv_trigger( event_extract_t* e, float in )
    if( e->hyst == 0 ){
       if( e->gate_state == 0 ){
          if( in > (e->in_history[0] + e->tr_rel_level)
-          && in > e->tr_abs_level ){
+          && in >= e->tr_abs_level ){
             // trigger high
             // replace these conditionals with some integer math
             // shift the cv, scale, then cast, then lookup in tr_t
@@ -54,7 +54,7 @@ etrig_t Extract_cv_trigger( event_extract_t* e, float in )
             e->gate_state = 1;
             e->hyst = e->hyst_time;
          } else if( in < (e->in_history[0] - e->tr_rel_level)
-                 && in < -(e->tr_abs_level) ){
+                 && in <= -(e->tr_abs_level) ){
             // trigger low
             if( e->in_history[0] > e->cv_thresh_opp ){
                retval = tr_n_positive;
