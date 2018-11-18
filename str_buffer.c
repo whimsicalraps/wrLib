@@ -1,6 +1,12 @@
 #include "str_buffer.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
+
+#ifdef S_SPLINT_S
+typedef int8_t char;
+typedef uint16_t int;
+#endif
 
 int8_t str_buffer_init(str_buffer_t* buf, uint16_t len)
 {
