@@ -8,7 +8,7 @@ int8_t str_buffer_init(str_buffer_t* buf, uint16_t len)
 	buf->contents = malloc(sizeof(char) * len+1);
 	if( buf->contents == NULL){ err = 1; }
 	for( uint16_t i=0; i<(len+1); i++ ){
-		buf->contents[i] = 0; // all nulls
+		buf->contents[i] = '\0';
 	}
 	// empty when read == write ix
 	buf->ix_read = 0;
@@ -27,9 +27,9 @@ void str_buffer_deinit( str_buffer_t* buf )
 
 void str_buffer_enqueue(str_buffer_t* buf, char* s)
 {
-	while(*s) { // until we reach a NULL
+	while(*s != '\0') { // until we reach a NULL
 		buf->contents[buf->ix_write++] = *s++;
-		if(buf->ix_write >= buf->length) { buf->ix_write = 0; }
+		if( buf->ix_write >= buf->length ){ buf->ix_write = 0; }
 		buf->count++;
 	}
 }
@@ -46,7 +46,7 @@ char* str_buffer_dequeue(str_buffer_t* buf, uint16_t size)
 uint16_t str_buffer_len(str_buffer_t* buf)
 {
 	uint16_t ret_len = buf->count;
-	if(ret_len + buf->ix_read > buf->length){
+	if( (ret_len + buf->ix_read) > buf->length){
 		ret_len = buf->length - buf->ix_read;
 	}
 	return ret_len;

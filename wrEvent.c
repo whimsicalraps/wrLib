@@ -91,3 +91,64 @@ etrig_t Extract_cv_trigger( event_extract_t* e, float in )
 
    return retval;
 }
+
+Debounce_t* Debounce_init( uint16_t debounce_count )
+{
+    Debounce_t* db = malloc( sizeof( Debounce_t ) );
+    db->state    = 0;
+    db->count    = 0;
+    db->count_to = debounce_count;
+    return db;
+}
+void Debounce_deinit( Debounce_t* db )
+{
+    free(db);
+}
+uint8_t Debounce_step( Debounce_t* db, uint8_t in )
+{
+    if( in != db->state ){ // change
+        if( ++db->count >= db->count_to ){
+            db->state = in;
+            db->count = 0;
+        }
+    } else {
+        db->count = 0;
+    }
+    return db->state;
+}
+
+// should inherit from debounce
+Debounce_a_t* Debounce_a_init( uint16_t debounce_count_up
+                             , uint16_t debounce_count_down
+                             )
+{
+    Debounce_a_t* db = malloc( sizeof( Debounce_a_t ) );
+    db->state         = 0;
+    db->count         = 0;
+    db->count_to_up   = debounce_count_up;
+    db->count_to_down = debounce_count_down;
+    return db;
+}
+void Debounce_a_deinit( Debounce_a_t* db )
+{
+    free(db);
+}
+uint8_t Debounce_a_step( Debounce_a_t* db, uint8_t in )
+{
+    if( in != db->state ){ // change
+        if( db->state ){
+            if( ++db->count >= db->count_to_down ){
+                db->state = in;
+                db->count = 0;
+            }
+        } else {
+            if( ++db->count >= db->count_to_up ){
+                db->state = in;
+                db->count = 0;
+            }
+        }
+    } else {
+        db->count = 0;
+    }
+    return db->state;
+}

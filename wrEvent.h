@@ -34,3 +34,26 @@ typedef struct event_extract {
 event_extract_t* Extract_init( void );
 void Extract_deinit( event_extract_t* e );
 etrig_t Extract_cv_trigger( event_extract_t* e, float in );
+
+typedef struct debounce{
+    uint8_t state;
+    uint16_t count;
+    uint16_t count_to;
+} Debounce_t;
+
+Debounce_t* Debounce_init( uint16_t debounce_count );
+void Debounce_deinit( Debounce_t* db );
+uint8_t Debounce_step( Debounce_t* db, uint8_t in );
+
+typedef struct debounce_a{
+    uint8_t state;
+    uint16_t count;
+    uint16_t count_to_up;
+    uint16_t count_to_down;
+} Debounce_a_t;
+
+Debounce_a_t* Debounce_a_init( uint16_t debounce_count_up
+                             , uint16_t debounce_count_down
+                             );
+void Debounce_a_deinit( Debounce_a_t* db );
+uint8_t Debounce_a_step( Debounce_a_t* db, uint8_t in );
