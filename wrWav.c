@@ -53,6 +53,19 @@ WavFile_t* wav_load( FILE* file )
     return wav;
 }
 
+float* wav_to_float( WavFile_t* src, int* count )
+{
+    *count = src->d->dwChunkSize / src->f->wBlockAlign;
+    float* f = malloc( sizeof(float) * *count );
+    float* f2 = f;
+    float* origin = (float*)src->d->sampleData_p;
+    for( int i=0; i<*count; i++ ){
+        *f2++ = *origin;
+        origin += src->f->wChannels;
+    }
+    return f;
+}
+
 static void wav_pretty_print( WavFile_t* w )
 {
     fprintf( stderr
@@ -119,7 +132,7 @@ WavFile_t* wav_new( uint16_t channels
 
 	memcpy( wav->f->sGroupID, "fmt ", 4 );
 	wav->f->dwChunkSize      = sizeof(WaveFormat_t) - 8;
-	wav->f->wFormatTag       = WAVE_FORMAT_PCM;
+	wav->f->wFormatTag       = WAVE_FORMAT_IEEE_FLOAT;
 	wav->f->wChannels        = channels;
 	wav->f->dwSamplesPerSec  = samplerate;
 	wav->f->dwBitsPerSample  = bitdepth;
