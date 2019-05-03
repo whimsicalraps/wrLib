@@ -1,7 +1,5 @@
 #include "wrEvent.h"
 
-#include "../stm32f7/1track/lib/debug_usart.h"
-
 event_extract_t* Extract_init( void )
 {
    event_extract_t* e = NULL;
