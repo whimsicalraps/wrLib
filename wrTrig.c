@@ -18,21 +18,22 @@ float tanh_fast(float in)
 	return out;
 }
 
-void tanh_fast_v(float* in, float* out, uint16_t size)
-{
-	float* in2=in;
-	float* out2=out;
-	float sq;
+float* tanh_fast_v( float* buffer
+                  , int    b_size
+                  ){
+	float* in  = buffer;
+	float* out = buffer;
 
-	for(uint16_t i=0; i<size; i++) {
-		if(*in2 <= -3) {
-			*out2++ = -1.0;
-		} else if(*in2 >= 3) {
-			*out2++ = 1.0;
+	for( int i=0; i<b_size; i++ ){
+		if( *in <= -3.0 ){
+			*out++ = -1.0;
+		} else if( *in >= 3.0 ){
+			*out++ = 1.0;
 		} else {
-			sq = (*in2) * (*in2); // input squared
-			*out2++ = (*in2) * (27 + sq) / (27 + 9 * sq);
+			float squared = *in * *in;
+			*out++ = *in * (27.0 + squared) / (27.0 + 9.0 * squared);
 		}
-		in2++;
+		in++;
 	}
+    return buffer;
 }
