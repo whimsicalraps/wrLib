@@ -8,27 +8,29 @@ typedef int8_t char;
 typedef uint16_t int;
 #endif
 
-int8_t str_buffer_init(str_buffer_t* buf, uint16_t len)
+str_buffer_t* str_buffer_init( int len )
 {
-	int8_t err = 0;
-	buf->contents = malloc(sizeof(char) * len+1);
-	if( buf->contents == NULL){ err = 1; }
-	for( uint16_t i=0; i<(len+1); i++ ){
-		buf->contents[i] = '\0';
-	}
-	// empty when read == write ix
-	buf->ix_read = 0;
-	buf->ix_write = 0;
-	buf->length = len; // count of chars
-	buf->count = 0;
+    str_buffer_t* self = malloc( sizeof( str_buffer_t ) );
+    if( !self ){ printf("str_buffer malloc failed\n"); return NULL; }
 
-	return err;
+	self->length = len;
+	self->contents = malloc(sizeof(char) * len+1);
+	if( !self->contents ){ printf("str_buffer contents!\n"); return NULL; }
+
+	for( int i=0; i<(len+1); i++ ){ self->contents[i] = '\0'; }
+
+	// empty when read == write ix
+	self->ix_read = 0;
+	self->ix_write = 0;
+	self->count = 0;
+
+	return self;
 }
 
 void str_buffer_deinit( str_buffer_t* buf )
 {
-	free( buf->contents );
-	buf->contents = NULL;
+	free( buf->contents ); buf->contents = NULL;
+    free( buf ); buf = NULL;
 }
 
 void str_buffer_enqueue(str_buffer_t* buf, char* s)

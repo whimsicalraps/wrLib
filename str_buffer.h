@@ -11,7 +11,7 @@ typedef struct str_buffer{
 	uint16_t count;
 } str_buffer_t;
 
-int8_t str_buffer_init(str_buffer_t* buf, uint16_t len);
+str_buffer_t* str_buffer_init( int len );
 void str_buffer_deinit( str_buffer_t* buf );
 void str_buffer_enqueue(str_buffer_t* buf, char* s);
 char* str_buffer_dequeue(str_buffer_t* buf, uint16_t size);

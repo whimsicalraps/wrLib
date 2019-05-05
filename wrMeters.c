@@ -1,5 +1,8 @@
 #include "wrMeters.h"
 
+#include <stdlib.h> // malloc
+#include <stdio.h> // printf
+
 VU_meter_t* VU_init( void )
 {
     VU_meter_t* self = malloc( sizeof( VU_meter_t ) );

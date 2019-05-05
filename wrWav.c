@@ -8,6 +8,11 @@ static void wav_updatelength( WavFile_t* wf
                             , uint32_t   byte_count
                             );
 
+/////////////////////////////////////////////////////////
+// WARNING! LEAKS MEMORY FOR EVERY WAV FILE /////////////
+// NEED TO CLEANUP ALL OF THE malloc'd DATA /////////////
+/////////////////////////////////////////////////////////
+
 WavFile_t* wav_load( FILE* file )
 {
     // read from file & create the appropriate structures

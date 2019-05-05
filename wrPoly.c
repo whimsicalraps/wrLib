@@ -18,6 +18,9 @@ void poly_init( poly_alloc_t* self
 	          , uint8_t       voice_count
 	          )
 {
+    poly_alloc_t* self = malloc( sizeof( poly_alloc_t ) );
+    if( !self ){ printf("poly malloc failed\n"); return NULL; }
+
 	self->voice_count = voice_count;
 
 	self->notes       = malloc(sizeof(int16_t) * voice_count);
@@ -32,6 +35,15 @@ void poly_init( poly_alloc_t* self
 		self->busy_list[i]  = 255;
 		self->free_queue[i] = 255;
 	}
+    return self;
+}
+
+void poly_deinit( poly_alloc_t* self )
+{
+    free(self->free_queue); self->free_queue = NULL;
+    free(self->busy_list); self->busy_list = NULL;
+    free(self->notes); self->notes = NULL;
+    free(self); self = NULL;
 }
 
 int8_t poly_assign_note( poly_alloc_t* self

@@ -1,10 +1,11 @@
 #include "wrEvent.h"
 
+#include <stdio.h>
+
 event_extract_t* Extract_init( void )
 {
-   event_extract_t* e = NULL;
-   e = malloc(sizeof(event_extract_t));
-   if( e == NULL ){ return NULL; } // failure
+   event_extract_t* e = malloc(sizeof(event_extract_t));
+   if( !e ){ printf("Event malloc failed\n"); return NULL; }
 
    // parameter defaults
    e->hyst_time      = 10;   // >= EXTRACT_HIST_LENGTH for debouncing
@@ -26,11 +27,12 @@ event_extract_t* Extract_init( void )
 
    return e;
 }
+
 void Extract_deinit( event_extract_t* e )
 {
-   free(e);
-   e = NULL;
+   free(e); e = NULL;
 }
+
 etrig_t Extract_cv_trigger( event_extract_t* e, float in )
 {
    etrig_t retval = tr_none;
@@ -93,15 +95,18 @@ etrig_t Extract_cv_trigger( event_extract_t* e, float in )
 Debounce_t* Debounce_init( uint16_t debounce_count )
 {
     Debounce_t* db = malloc( sizeof( Debounce_t ) );
+    if( !db ){ printf("Debounce malloc failed\n"); return NULL; }
     db->state    = 0;
     db->count    = 0;
     db->count_to = debounce_count;
     return db;
 }
+
 void Debounce_deinit( Debounce_t* db )
 {
-    free(db);
+    free(db); db = NULL;
 }
+
 uint8_t Debounce_step( Debounce_t* db, uint8_t in )
 {
     if( in != db->state ){ // change
@@ -121,16 +126,19 @@ Debounce_a_t* Debounce_a_init( uint16_t debounce_count_up
                              )
 {
     Debounce_a_t* db = malloc( sizeof( Debounce_a_t ) );
+    if( !db ){ printf("Debounce_a malloc failed\n"); return NULL; }
     db->state         = 0;
     db->count         = 0;
     db->count_to_up   = debounce_count_up;
     db->count_to_down = debounce_count_down;
     return db;
 }
+
 void Debounce_a_deinit( Debounce_a_t* db )
 {
-    free(db);
+    free(db); db = NULL;
 }
+
 uint8_t Debounce_a_step( Debounce_a_t* db, uint8_t in )
 {
     if( in != db->state ){ // change
