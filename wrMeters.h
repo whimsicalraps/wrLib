@@ -9,6 +9,7 @@ typedef struct VU_meter {
 } VU_meter_t;
 
 // variable speed
-void VU_init( VU_meter_t* self);
+VU_meter_t* VU_init( void );
+void VU_deinit( VU_meter_t* self );
 void VU_time( VU_meter_t* self, float slew);
 float VU_step( VU_meter_t* self, float in );
