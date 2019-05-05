@@ -5,7 +5,7 @@
 #include "wrFilter.h"
 
 typedef struct VU_meter {
-	filter_lp1_t smooth;  // just a wrapper for a low-pass
+	filter_lp1_t* smooth;
 } VU_meter_t;
 
 // variable speed
