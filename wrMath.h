@@ -64,7 +64,7 @@ uint8_t max_u8(uint8_t a, uint8_t b); // returns the higher of two u8
 	// LOGIC
 		// 42% @8, 44% @32
 	void lim_vf_f(float* in, float min, float max, float* out, uint16_t size);
-	void lim_vf_audio(float* audio, uint16_t size);
+    float* lim_vf_audio( float* audio, int size );
 
 	// ADD - MARGINALLY SLOWER
 	void add_vf_vf(float* a, float* b, float* sum, uint16_t size);

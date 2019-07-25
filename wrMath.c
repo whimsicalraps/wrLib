@@ -169,13 +169,15 @@ void lim_vf_f(float* in, float min, float max, float* out, uint16_t size) {
 	}
 }
 
-void lim_vf_audio(float* audio, uint16_t size)
+float* lim_vf_audio( float* audio, int size )
 {
-	for(uint16_t i=0; i<size; i++) {
-		if(*audio < -1.0) { *audio++ = -1.0; } // lower limit
-		else if(*audio > 1.0) { *audio++ = 1.0; } // upper limit
-		else { audio++; } // don't change
+    float* s = audio;
+	for( int i=0; i<size; i++ ){
+		if( *s < -1.0 )     { *s++ = -1.0; } // lower limit
+		else if( *s > 1.0 ) { *s++ = 1.0; } // upper limit
+		else                {  s++; } // don't change
 	}
+    return audio;
 }
 
 // set an array to a single value
