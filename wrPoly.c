@@ -1,6 +1,7 @@
 #include "wrPoly.h"
 
 #include <stdlib.h>
+#include <stdio.h> // printf
 
 // private declarations
 void _free_voice( poly_alloc_t* self
@@ -14,9 +15,7 @@ int8_t _steal_voice( poly_alloc_t* self
 	               );
 
 // public definitions
-void poly_init( poly_alloc_t* self
-	          , uint8_t       voice_count
-	          )
+poly_alloc_t* poly_init( uint8_t voice_count )
 {
     poly_alloc_t* self = malloc( sizeof( poly_alloc_t ) );
     if( !self ){ printf("poly malloc failed\n"); return NULL; }

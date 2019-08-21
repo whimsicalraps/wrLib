@@ -27,9 +27,7 @@ typedef struct poly_alloc{
 	uint8_t* free_queue;
 } poly_alloc_t;
 
-void poly_init( poly_alloc_t* self
-	          , uint8_t       voice_count
-	          );
+poly_alloc_t* poly_init( uint8_t voice_count );
 void poly_deinit( poly_alloc_t* self );
 int8_t poly_assign_note( poly_alloc_t* self
                        , int16_t       note
