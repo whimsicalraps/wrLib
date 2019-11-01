@@ -89,7 +89,7 @@ void _free_voice( poly_alloc_t* self
 		// matches first occurance, not oldest, for duplicate pitches
 	uint8_t i = 0;
 	while( voice != self->busy_list[i] ){ i++; }
-	for(i; i < (--self->busy_count); i++){
+	for(; i < (--self->busy_count); i++){
 		self->busy_list[i] = self->busy_list[i+1];
 	}
 
