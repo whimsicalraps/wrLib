@@ -41,6 +41,8 @@ float wrap_f(float in, float min, float max); // wrap within range (circular buf
 //float interp_lin_asm(float in1, float in2, float mix); // linear interpolator
 float interp_lin_f(float in1, float in2, float mix); // linear interpolator
 float interp_lin_f_2d(float in1_x, float in2_x, float in1_y, float in2_y, float mix_x, float mix_y); // linear interpolator
+float dB_to_amp( float dB );
+float amp_to_dB( float amp );
 
 // INT32 (signed)
 int32_t lim_i24_audio(int32_t in); // upper & lower bound limit for signed 32b int

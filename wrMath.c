@@ -1,5 +1,7 @@
 #include "wrMath.h"
 
+#include <math.h>
+
 // this function takes 0-1
 	// does a 1/x lookup with inverse
 	// particularly useful for ramp->tri->saw morphs
@@ -41,6 +43,14 @@ float wrap_f(float in, float min, float max) {
 	while(in>=max) { in -= diff; }
 
 	return in;
+}
+
+float dB_to_amp( float dB ){
+    return powf(10.0, dB/20.0);
+}
+
+float amp_to_dB( float amp ){
+    return 20.0 * log10f(amp);
 }
 
 /*float interp_lin_asm(float in1, float in2, float mix)
