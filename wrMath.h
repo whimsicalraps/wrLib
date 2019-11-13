@@ -74,7 +74,7 @@ uint8_t max_u8(uint8_t a, uint8_t b); // returns the higher of two u8
 	// MUL - MARGINALLY SLOWER
 	void mul_vf_vf(float* a, float* b, float* product, uint16_t size);
 		// VECT * SCALAR = MODEST IMPROVEMENT!
-	void mul_vf_f(float* a, float b, float* product, uint16_t size);
+	float* mul_vf_f(float* a, float b, int size);
 	// mul vectorf by constf then add constf
 	void muladd_vf_f_f(float* vin, float mul, float add, float* product, uint16_t size);
 	// mul vectorf by constf then add vectorf

@@ -22,6 +22,12 @@ int queue_enqueue( queue_t* self )
     return eq;
 }
 
+int queue_front( queue_t* self )
+{
+    if( self->count <= 0 ){ return -1; }
+    return self->head;
+}
+
 int queue_dequeue( queue_t* self )
 {
     if( self->count <= 0 ){ return -1; }
