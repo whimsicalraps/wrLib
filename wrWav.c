@@ -49,12 +49,13 @@ WavFile_t* wav_load( FILE* file )
          );
     // now the data (relies on wav->d metadata)
     printf("FIXME wav samples are malloc'd! should just stream with fread\n");
-    wav->d->sampleData_p = malloc( wav->d->dwChunkSize );
-    fread( wav->d->sampleData_p
-         , 1
-         , wav->d->dwChunkSize
-         , wav->file_read
-         );
+    //wav->d->sampleData_p = malloc( wav->d->dwChunkSize );
+    wav->sampleData_seek = ftell( wav->file_read );
+    //fread( wav->d->sampleData_p
+    //     , 1
+    //     , wav->d->dwChunkSize
+    //     , wav->file_read
+    //     );
     wav_pretty_print( wav );
     return wav;
 }
@@ -72,6 +73,13 @@ float* wav_malloc_float( WavFile_t* src, int* count )
         origin += src->f->wChannels;
     }
     return f;
+}
+
+int wav_read_s16( int16_t* dst, WavFile_t* src, int offset, int halfwords )
+{
+    fseek( src->file_read, offset + src->sampleData_seek, SEEK_SET );
+    fread( dst, sizeof(int16_t), halfwords, src->file_read );
+    return 0;
 }
 
 static void wav_pretty_print( WavFile_t* w )
