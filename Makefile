@@ -16,7 +16,7 @@ endif
 .PHONY: clean
 .PHONY: test
 
-PATHU = unity/src/
+PATHU = Unity/src/
 PATHS = src/
 PATHT = test/
 PATHB = build/
