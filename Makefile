@@ -17,8 +17,8 @@ endif
 .PHONY: test
 
 PATHU = Unity/src/
-PATHS = src/
-PATHT = test/
+PATHS = math/
+PATHT = test/math/
 PATHB = build/
 PATHD = build/depends/
 PATHO = build/objs/
