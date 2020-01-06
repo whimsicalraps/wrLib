@@ -7,6 +7,7 @@
 *.elf
 *.dmp
 *.d
+build/
 
 # Precompiled Headers
 *.gch
