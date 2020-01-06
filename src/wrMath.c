@@ -202,13 +202,14 @@ void add_vf_vf(float* a, float* b, float* sum, uint16_t size) {
 }
 
 // increment float array by scalar
-void add_vf_f(float* a, float b, float* sum, uint16_t size) {
-	float* a2=a;
-	float* sum2=sum; // point to start of arrays
+float* add_vf_f(float* a, float b, int size){
+	float* src=a;
+	float* dst=a;
 
 	for(uint16_t i=0; i<size; i++) {
-		*sum2++ = (*a2++) + b;
-	}	
+		*dst++ = *src++ + b;
+	}
+    return a;
 }
 void sub_vf_f(float* a, float b, float* diff, uint16_t size) {
 	float* a2=a;

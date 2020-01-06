@@ -9,9 +9,9 @@
 // use an underscore and first Capital (camel) as a 'this is a macro!' warning
 // they type-agnostic! yay!
 //
-#define _Abs(a)    (a < 0 ? -(a) : a)
-#define _Max(a, b) ((a) > (b) ? (a) : (b))
-#define _Min(a, b) ((a) < (b) ? (a) : (b))
+#define _Abs(a)    do{(a < 0) ? -(a) : a}while(0);
+#define _Max(a, b) do{((a) > (b)) ? (a) : (b)}while(0);
+#define _Min(a, b) do{((a) < (b)) ? (a) : (b)}while(0);
 /*#define _Limit(in, min, max) (  \
 			(in) > (min)        \
 				? ((in) < (max) \
@@ -19,9 +19,9 @@
 					: (max))    \
 				: (min))        \
 */
-#define _Swap(a, b) { a ^= b; b ^= a; a ^= b; }
-#define _Lim01(a) ((a > 1) ? 1 : ((a < 0) ? 0 : a ))
-#define _Lim(a,min,max) ((a > max) ? max : ((a < min) ? min : a ))
+#define _Swap(a, b) do{ a ^= b; b ^= a; a ^= b; }while(0);
+#define _Lim01(a) do{(a > 1) ? 1 : ((a < 0) ? 0 : a )}while(0);
+#define _Lim(a,min,max) do{(a > max) ? max : ((a < min) ? min : a )}while(0);
 
 // WARNING: doesn't work for negative numbers
 #define _GetFract(a) ( a - (float)(int)a )
@@ -68,7 +68,8 @@ uint8_t max_u8(uint8_t a, uint8_t b); // returns the higher of two u8
 
 	// ADD - MARGINALLY SLOWER
 	void add_vf_vf(float* a, float* b, float* sum, uint16_t size);
-	void add_vf_f(float* a, float b, float* sum, uint16_t size);
+	float* add_vf_f(float* a, float b, int size);
+	//void add_vf_f(float* a, float b, float* sum, uint16_t size);
 	void sub_vf_f(float* a, float b, float* diff, uint16_t size);
 
 	// MUL - MARGINALLY SLOWER
