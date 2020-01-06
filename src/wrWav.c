@@ -37,9 +37,9 @@ WavFile_t* wav_load( FILE* file )
          , wav->file_read
          );
     if( wav->f->dwChunkSize != 16 ){
-        //TODO fseek to appropriate place
+        printf("TODO fseek to appropriate place.\n");
     }
-    // TODO should really be a 'fact' chunk here?
+    printf("TODO should really be a 'fact' chunk here?\n");
     // need to str_cmp to check what we're reading
     // only the data metadata
     fread( wav->d
@@ -48,27 +48,38 @@ WavFile_t* wav_load( FILE* file )
          , wav->file_read
          );
     // now the data (relies on wav->d metadata)
-    wav->d->sampleData_p = malloc( wav->d->dwChunkSize );
-    fread( wav->d->sampleData_p
-         , 1
-         , wav->d->dwChunkSize
-         , wav->file_read
-         );
+    printf("FIXME wav samples are malloc'd! should just stream with fread\n");
+    //wav->d->sampleData_p = malloc( wav->d->dwChunkSize );
+    wav->sampleData_seek = ftell( wav->file_read );
+    //fread( wav->d->sampleData_p
+    //     , 1
+    //     , wav->d->dwChunkSize
+    //     , wav->file_read
+    //     );
     wav_pretty_print( wav );
     return wav;
 }
 
-float* wav_to_float( WavFile_t* src, int* count )
+float* wav_malloc_float( WavFile_t* src, int* count )
 {
+    int c = *count;
     *count = src->d->dwChunkSize / src->f->wBlockAlign;
+    if( c > 0 && *count > c ){ *count = c; } // limit to count
     float* f = malloc( sizeof(float) * *count );
     float* f2 = f;
-    float* origin = (float*)src->d->sampleData_p;
+    int16_t* origin = (int16_t*)src->d->sampleData_p; // assume 16bit integer
     for( int i=0; i<*count; i++ ){
-        *f2++ = *origin;
+        *f2++ = (1.0/0x7FFF) * (float)*origin;
         origin += src->f->wChannels;
     }
     return f;
+}
+
+int wav_read_s16( int16_t* dst, WavFile_t* src, int offset, int halfwords )
+{
+    fseek( src->file_read, offset + src->sampleData_seek, SEEK_SET );
+    fread( dst, sizeof(int16_t), halfwords, src->file_read );
+    return 0;
 }
 
 static void wav_pretty_print( WavFile_t* w )

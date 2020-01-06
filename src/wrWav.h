@@ -39,6 +39,7 @@ typedef struct{
 } WaveData_t;
 
 typedef struct{
+    long int sampleData_seek;
 	WaveHeader_t* h;
 	WaveFormat_t* f;
 	WaveFact_t*   fa;
@@ -48,7 +49,8 @@ typedef struct{
 } WavFile_t;
 
 WavFile_t* wav_load( FILE* file );
-float* wav_to_float( WavFile_t* src, int* count );
+float* wav_malloc_float( WavFile_t* src, int* count );
+int wav_read_s16( int16_t* dst, WavFile_t* src, int offset, int halfwords );
 void wav_save_as( FILE* dest, WavFile_t* src );
 WavFile_t* wav_new( uint16_t channels
                   , uint32_t samplerate

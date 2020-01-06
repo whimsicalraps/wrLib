@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 // a wrapper over get/set functions into a stream - an 'interface' (?)
 // uses a request/respond model to enable deferred access
 
@@ -12,16 +14,17 @@ typedef enum{ DIR_READ
             , DIR_WRITE
 } wrStream_DIR_t;
 
-typedef int (*wrStream_OC_t)( void );
+typedef int (*wrStream_Open_t)( const char* filepath, const char* mode );
+typedef int (*wrStream_CB_t)( void );
 typedef int (*wrStream_RR_t)( wrStream_DIR_t direction
                             , int            location
                             , int            size_in_bytes
                             , uint8_t*       data );
 typedef void (*wrStream_ER_t)( int errorcode, char* msg );
 typedef struct{
-    wrStream_OC_t open;
-    wrStream_OC_t close;
-    wrStream_OC_t busy;
+    wrStream_Open_t open;
+    wrStream_CB_t close;
+    wrStream_CB_t busy;
     wrStream_RR_t request;
     wrStream_RR_t response;
     wrStream_ER_t error;
