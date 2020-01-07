@@ -17,8 +17,12 @@ endif
 .PHONY: test
 
 PATHU = Unity/src/
-PATHS = math/
-PATHT = test/math/
+
+PATHSM = math/
+PATHTM = test/math/
+PATHSD = dsp/
+PATHTD = test/dsp/
+
 PATHB = build/
 PATHD = build/depends/
 PATHO = build/objs/
@@ -26,14 +30,16 @@ PATHR = build/results/
 
 BUILD_PATHS = $(PATHB) $(PATHD) $(PATHO) $(PATHR)
 
-SRCT = $(wildcard $(PATHT)*.c)
+SRCTM = $(wildcard $(PATHTM)*.c)
+SRCTD = $(wildcard $(PATHTD)*.c)
 
 COMPILE=gcc -c
 LINK=gcc
 DEPEND=gcc -MM -MG -MF
-CFLAGS=-I. -I$(PATHU) -I$(PATHS) -DTEST
+CFLAGS=-I. -I$(PATHU) -I$(PATHSM) -I$(PATHSD) -DTEST
 
-RESULTS = $(patsubst $(PATHT)Test%.c,$(PATHR)Test%.txt,$(SRCT) )
+RESULTS  = $(patsubst $(PATHTM)Test%.c,$(PATHR)Test%.txt,$(SRCTM) )
+RESULTS += $(patsubst $(PATHTD)Test%.c,$(PATHR)Test%.txt,$(SRCTD) )
 
 PASSED = `grep -s PASS $(PATHR)*.txt`
 FAIL = `grep -s FAIL $(PATHR)*.txt`
@@ -54,16 +60,25 @@ $(PATHR)%.txt: $(PATHB)%.$(TARGET_EXTENSION)
 $(PATHB)Test%.$(TARGET_EXTENSION): $(PATHO)Test%.o $(PATHO)%.o $(PATHU)unity.o #$(PATHD)Test%.d
 	$(LINK) -o $@ $^
 
-$(PATHO)%.o:: $(PATHT)%.c
+$(PATHO)%.o:: $(PATHTM)%.c
 	$(COMPILE) $(CFLAGS) $< -o $@
 
-$(PATHO)%.o:: $(PATHS)%.c
+$(PATHO)%.o:: $(PATHTD)%.c
+	$(COMPILE) $(CFLAGS) $< -o $@
+
+$(PATHO)%.o:: $(PATHSM)%.c
+	$(COMPILE) $(CFLAGS) $< -o $@
+
+$(PATHO)%.o:: $(PATHSD)%.c
 	$(COMPILE) $(CFLAGS) $< -o $@
 
 $(PATHO)%.o:: $(PATHU)%.c $(PATHU)%.h
 	$(COMPILE) $(CFLAGS) $< -o $@
 
-$(PATHD)%.d:: $(PATHT)%.c
+$(PATHD)%.d:: $(PATHTM)%.c
+	$(DEPEND) $@ $<
+
+$(PATHD)%.d:: $(PATHTD)%.c
 	$(DEPEND) $@ $<
 
 $(PATHB):
