@@ -39,9 +39,9 @@ buffer_t* buffer_new( buffer_t* self, size_t bytes_per_value, int length )
 {
     buffer_free( self );
     if( length ){ // zero-length just clears buffer
-        self->b = malloc( bytes_per_value * length );
+        self->b = calloc( length, bytes_per_value );
         if( !self->b ){
-            printf("buffer_new malloc failed\n");
+            printf("buffer_new calloc failed\n");
         } else {
             self->len = length;
         }
