@@ -31,6 +31,11 @@ osc_sine_t* sine_init( void )
     return self;
 }
 
+void sine_deinit( osc_sine_t* self )
+{
+    free( self ); self = NULL;
+}
+
 // input fns
 // expect 0-1, but can accept through -1 for TZ effects
 void osc_sine_time( osc_sine_t* self, float time_ )

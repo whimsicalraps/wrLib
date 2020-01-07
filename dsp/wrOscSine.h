@@ -14,6 +14,7 @@ typedef struct osc_sine{
 
 // initialization
 osc_sine_t* sine_init( void );
+void sine_deinit( osc_sine_t* self );
 
 // input fns
 void osc_sine_time( osc_sine_t* self, float time );
