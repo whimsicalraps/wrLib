@@ -55,7 +55,7 @@ ihead_fade_t* ihead_fade_init( void )
     ihead_fade_t* self = malloc( sizeof( ihead_fade_t ) );
     if( !self ){ printf("ihead_fade_init failed malloc\n"); return NULL; }
 
-    self->fade_length = 0.003; // 3ms
+    self->fade_length = 0.01; // 10ms
 
     self->head[0] = ihead_init();
     self->head[1] = ihead_init();
