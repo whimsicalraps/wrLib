@@ -138,18 +138,19 @@ void ihead_poke( ihead_t*  self
     if( speed == 0.0 ){ return; }
 
     int nframes = write( self, speed, input * self->rec_level );
+    if( nframes == 0 ){ return; } // nothing to do
 
-    int dir = (speed >= 0.0) ? 1 : -1;
-    float* y = self->out_buf; // y is the data to be written to the buffer_t
+    int nframes_dir = (speed >= 0.0) ? nframes : -nframes;
     if( self->recording ){
+        float* y = self->out_buf; // y is the data to be written to the buffer_t
+        float* sampsP[nframes];
+        buffer_points( buf, sampsP, self->write_ix, nframes_dir );
         for( int i=0; i<nframes; i++ ){
-            // TODO apply clip, brickwall, compand to *y
-            buffer_poke_mac( buf, self->write_ix, self->pre_level, *y++ );
-            self->write_ix = self->write_ix + dir;
+            *sampsP[i] *= self->pre_level; // erase head
+            *sampsP[i] += *y++;            // record head
         }
-    } else { // record inactive, just update phase (as a block)
-        self->write_ix = self->write_ix + (nframes * dir);
     }
+    self->write_ix += nframes_dir;
 }
 
 void ihead_fade_poke( ihead_fade_t*  self
@@ -161,7 +162,10 @@ void ihead_fade_poke( ihead_fade_t*  self
     if( self->fade_countdown > 0 ){
         self->fade_countdown--;
 
-        // fade out
+// FIXME these linear fades cause volume bumps at the loop points when recording
+        // see: https://github.com/catfact/softcut/issues/4
+    // basic form would apply the pre-fade as a shorter window at the extremes
+    // TODO have only be listening without input, so reconsider after working with ins
         ihead_rec_level( self->head[!self->fade_active_head]
                        , self->fade_rec_level * (1.0 - self->fade_phase) );
         ihead_pre_level( self->head[self->fade_active_head]
@@ -253,6 +257,7 @@ static int write( ihead_t* self, float rate, float input )
     // this is normalized to the distance between input frames
     // so: the distance to the first output frame boundary:
     if( new_frames ){
+        // FIXME might need to be double? see: https://github.com/catfact/softcut/issues/6
         float f = 1.0 - self->out_phase;
         f *= phi; // normalized (divided by rate);
 
