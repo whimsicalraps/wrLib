@@ -193,39 +193,26 @@ float ihead_fade_update_phase( ihead_fade_t* self, float speed )
 
 float ihead_peek( ihead_t* self, buffer_t* buf )
 {
-    // find sample indices
-    int p0  = (int)self->rphase;
-    int pn1 = p0-1;
-    int p1  = p0+1;
-    int p2  = p0+2;
+    int p0 = (int)self->rphase; // nearest integer sample
+    float coeff = self->rphase - (float)p0; // interpolation coefficient [0,1)
 
-    // interpolation coefficient [0,1)
-    float coeff = self->rphase - (float)p0;
-
-    // interpolate array to find value
-    //float* sampsP[4];
-    //buffer_points( buf, sampsP, p0-1, 4 );
-    float samps[4] = { buffer_peek( buf, pn1 )
-                     , buffer_peek( buf, p0 )
-                     , buffer_peek( buf, p1 )
-                     , buffer_peek( buf, p2 )
-                     };
-    //float samps[4];
-    //for( int i=0; i<4; i++ ){ samps[i] = *sampsP[i]; }
-    return interp_hermite_4pt( coeff, &samps[1] );
+    // interpolate into the array of float*s
+    float* sampsP[4];
+    buffer_points( buf, sampsP, p0-1, 4 );
+    return interp_hermite_4pt_ref( coeff, &sampsP[1] );
 }
 
 float ihead_fade_peek( ihead_fade_t* self, buffer_t* buf )
 {
     float o;
-    //if( self->fade_countdown > 0 ){ // only poke decrements
-    //    float out = ihead_peek( self->head[ !self->fade_active_head ], buf );
-    //    float in  = ihead_peek( self->head[  self->fade_active_head ], buf );
-    //    self->fade_phase += self->fade_increment; // move through xfade
-    //    o = out + self->fade_phase * (in - out ); // apply xfade linearly
-    //} else { // single head
+    if( self->fade_countdown > 0 ){
+        float out = ihead_peek( self->head[ !self->fade_active_head ], buf );
+        float in  = ihead_peek( self->head[  self->fade_active_head ], buf );
+        self->fade_phase += self->fade_increment; // move through xfade
+        o = out + self->fade_phase * (in - out ); // apply xfade linearly
+    } else { // single head
         o = ihead_peek( self->head[ self->fade_active_head ], buf );
-    //}
+    }
     return o;
 }
 
