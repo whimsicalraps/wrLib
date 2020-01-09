@@ -13,6 +13,7 @@ queue_t* queue_init( int length);
 
 // returns valid array index for success
 // returns -1 for over/underflow
+int queue_space( queue_t* self ); // count of free spaces
 int queue_enqueue( queue_t* self );
 int queue_front( queue_t* self ); // non-destructive query
 int queue_dequeue( queue_t* self );

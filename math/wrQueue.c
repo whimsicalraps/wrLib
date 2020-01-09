@@ -14,6 +14,8 @@ queue_t* queue_init( int length)
     return self;
 }
 
+int queue_space( queue_t* self ){ return self->length - self->count; }
+
 int queue_enqueue( queue_t* self )
 {
     if( self->count >= self->length ){ return -1; }
