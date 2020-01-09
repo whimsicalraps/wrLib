@@ -16,6 +16,9 @@ typedef enum{ DIR_READ
 
 typedef int (*wrStream_Open_t)( const char* filepath, const char* mode );
 typedef int (*wrStream_CB_t)( void );
+
+// TODO should take a wrStream_PACKET_t literal-struct to avoid per-member copying
+    // pass the struct on the stack, rather than using a reference
 typedef int (*wrStream_RR_t)( wrStream_DIR_t direction
                             , int            location
                             , int            size_in_bytes
