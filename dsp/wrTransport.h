@@ -1,6 +1,6 @@
 #pragma once
 
-#include <stdint.h>
+#include <stdbool.h>
 #include "wrFilter.h" // filter_lp1_t
 
 typedef enum{ transport_motor_standard
@@ -20,8 +20,9 @@ typedef struct{
 } std_speeds_t;
 
 typedef struct{
-    uint8_t       active;
-    int8_t        tape_islocked;
+    std_speeds_t speeds;
+
+    bool          active;
 
     filter_lp1_t* speed_slew; // smoothing for speed changes
     float         speed_active;
@@ -31,14 +32,21 @@ typedef struct{
     float         nudge;      // how much are we currently nudging?
     float         nudge_accum;
 
-    std_speeds_t speeds;
 } transport_t;
+
+
+////////////////////////////////
+// setup
 
 transport_t* transport_init( void );
 void transport_deinit( transport_t* self );
 
+
+////////////////////////////////
+// setters
+
 void transport_active( transport_t*            self
-                     , uint8_t                 active
+                     , bool                    active
                      , transport_motor_speed_t slew
                      );
 void transport_change_std_speeds( transport_t* self
@@ -48,12 +56,19 @@ void transport_speed_active( transport_t* self, float speed );
 void transport_speed_inactive( transport_t* self, float speed );
 void transport_nudge( transport_t* self, float delta );
 
-uint8_t transport_is_active( transport_t* self );
+
+/////////////////////////////////
+// getters
+
+bool transport_is_active( transport_t* self );
 float transport_get_speed( transport_t* self );
 
+
+/////////////////////////////////
+// signal
+
+float transport_speed_step( transport_t* self );
 float* transport_speed_block( transport_t* self
                             , float* buffer
                             , int b_size
                             );
-
-uint8_t transport_is_tape_moving( transport_t* self );
