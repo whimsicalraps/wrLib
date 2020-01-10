@@ -143,12 +143,22 @@ void ihead_poke( ihead_t*  self
     int nframes_dir = (speed >= 0.0) ? nframes : -nframes;
     if( self->recording ){
         float* y = self->out_buf; // y is the data to be written to the buffer_t
-        float* sampsP[nframes];
-        buffer_points( buf, sampsP, self->write_ix, nframes_dir );
+        //float* sampsP[nframes];
+        //buffer_points( buf, sampsP, self->write_ix, nframes_dir );
+        //for( int i=0; i<nframes; i++ ){
+        //    *sampsP[i] *= self->pre_level; // erase head
+        //    *sampsP[i] += *y++;            // record head
+        //}
+      // NOTE: using less efficient peek & poke to allow:
+                // 1. easier to handle type conversion at a lower level
+                // 2. easier to infer if a section of buffer needs to be rewritten
+        float samps[nframes];
+        buffer_peek_v( buf, samps, self->write_ix, nframes_dir );
         for( int i=0; i<nframes; i++ ){
-            *sampsP[i] *= self->pre_level; // erase head
-            *sampsP[i] += *y++;            // record head
+            samps[i] *= self->pre_level; // erase head
+            samps[i] += *y++;            // record head
         }
+        buffer_poke_v( buf, samps, self->write_ix, nframes_dir );
     }
     self->write_ix += nframes_dir;
 }
@@ -201,9 +211,9 @@ float ihead_peek( ihead_t* self, buffer_t* buf )
     float coeff = self->rphase - (float)p0; // interpolation coefficient [0,1)
 
     // interpolate into the array of float*s
-    float* sampsP[4];
-    buffer_points( buf, sampsP, p0-1, 4 );
-    return interp_hermite_4pt_ref( coeff, &sampsP[1] );
+    float samps[4];
+    buffer_peek_v( buf, samps, p0-1, 4 );
+    return interp_hermite_4pt( coeff, &samps[1] );
 }
 
 float ihead_fade_peek( ihead_fade_t* self, buffer_t* buf )

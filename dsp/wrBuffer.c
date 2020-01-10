@@ -67,10 +67,22 @@ float** buffer_points( buffer_t* self, float** dst, int origin, int count )
     return (*i->points)( i, dst, origin, count );
 }
 
+float* buffer_peek_v( buffer_t* self, float* dst, int origin, int count )
+{
+    buffer_interface_t* i = (buffer_interface_t*)(self->interface);
+    return (*i->peek_v)( i, dst, origin, count );
+}
+
 float buffer_peek( buffer_t* self, int location )
 {
     buffer_interface_t* i = (buffer_interface_t*)(self->interface);
     return (*i->peek)( i, location );
+}
+
+void buffer_poke_v( buffer_t* self, float* dst, int origin, int count )
+{
+    buffer_interface_t* i = (buffer_interface_t*)(self->interface);
+    return (*i->poke_v)( i, dst, origin, count );
 }
 
 void buffer_poke_mac( buffer_t* self, int location, float mult, float accum )
