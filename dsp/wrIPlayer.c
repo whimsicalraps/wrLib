@@ -21,6 +21,9 @@ player_t* player_init( buffer_t* buffer )
     self->head = ihead_fade_init();
     if( !self){ printf("player head failed.\n"); return NULL; }
 
+    self->transport = transport_init();
+    if( !self ){ printf("player transport failed.\n"); return NULL; }
+
     self->speed = 0.0;
     player_load( self, buffer );
     player_playing( self, false );
@@ -56,6 +59,7 @@ player_t* player_load( player_t* self, buffer_t* buffer )
 void player_playing( player_t* self, bool is_play )
 {
     self->playing = is_play;
+    transport_active( self->transport, is_play, 0 );
 }
 
 bool player_goto( player_t* self, int sample )
@@ -79,6 +83,7 @@ void player_speed( player_t* self, float speed )
 {
     float old_speed = self->speed;
     self->speed = speed;
+    transport_speed_active( self->transport, speed );
     if( (old_speed >= 0.0 && speed < 0.0)
      || (old_speed <= 0.0 && speed > 0.0) ){
         player_goto( self, player_get_goto(self) ); // reset head offset
@@ -175,7 +180,8 @@ float player_step( player_t* self, float in )
 {
     if( !self->buf ){ return 0.0; } // no buffer available
 
-    float motion = (self->playing) ? self->speed : 0.0;
+    //float motion = (self->playing) ? self->speed : 0.0;
+    float motion = transport_speed_step( self->transport );
     float out = ihead_fade_peek( self->head, self->buf );
     ihead_fade_poke( self->head
                    , self->buf

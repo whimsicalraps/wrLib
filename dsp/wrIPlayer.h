@@ -2,19 +2,21 @@
 
 #include "wrBuffer.h"
 #include "wrIHead.h"
+#include "wrTransport.h"
 
 typedef struct{
-    buffer_t*  buf;
+    buffer_t*     buf;
     ihead_fade_t* head;
+    transport_t*  transport;
 
-    bool playing; // transport state
+    bool  playing; // transport state
     float speed; // transport speed
     float tape_end;
-    bool loop;
+    bool  loop;
     float loop_start;
     float loop_end;
     float location; // 'playhead' pointer to buffer
-    bool going; // flag if a buf request is enqueued
+    bool  going; // flag if a buf request is enqueued
 } player_t;
 
 // setup
