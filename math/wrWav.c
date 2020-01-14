@@ -85,13 +85,13 @@ int wav_read_s16( int16_t* dst, WavFile_t* src, int offset, int halfwords )
 static void wav_pretty_print( WavFile_t* w )
 {
     fprintf( stderr
-           , "Header\tGroupID\t%.*s\n\tFileLength\t%i\n\tRiffType\t%.*s\n"
+           , "Header\tGroupID\t%.*s\n\tFileLength\t%i\n\tRiffType\t%.*s\n\r"
            , 4, w->h->sGroupID
            , w->h->dwFileLength
            , 4, w->h->sRiffType
            );
     fprintf( stderr
-           , "Format\tGroupID\t%.*s\n\tChunkSize\t%i\n\tFormatTag\t%i\n\tChannels\t%i\n\tSamples/Sec\t%i\n\tBytes/Sec\t%i\n\tBlockAlign\t%i\n\tBits/Samp\t%i\n"
+           , "Format\tGroupID\t%.*s\n\tChunkSize\t%i\n\tFormatTag\t%i\n\tChannels\t%i\n\tSamples/Sec\t%i\n\tBytes/Sec\t%i\n\tBlockAlign\t%i\n\tBits/Samp\t%i\n\r"
            , 4, w->f->sGroupID
            , w->f->dwChunkSize
            , w->f->wFormatTag
@@ -103,14 +103,14 @@ static void wav_pretty_print( WavFile_t* w )
            );
     if( w->f->wFormatTag != 0x0001 ){ // non-PCM data
         fprintf( stderr
-               , "Fact\tGroupID\t%.*s\n\tChunkSize\t%u\n\tSampleLength\t%i\n"
+               , "Fact\tGroupID\t%.*s\n\tChunkSize\t%u\n\tSampleLength\t%i\n\r"
                , 4, w->fa->sGroupID
                , w->fa->dwChunkSize
                , w->fa->dwSampleLength
                );
     }
     fprintf( stderr
-           , "Data\tGroupID\t%.*s\n\tChunkSize\t%u\n"
+           , "Data\tGroupID\t%.*s\n\tChunkSize\t%u\n\r"
            , 4, w->d->sGroupID
            , w->d->dwChunkSize
            );
