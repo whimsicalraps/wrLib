@@ -16,10 +16,10 @@ static float tape_clamp( player_t* self, float location );
 player_t* player_init( buffer_t* buffer )
 {
     player_t* self = malloc( sizeof( player_t ) );
-    if( !self){ printf("player malloc failed.\n"); return NULL; }
+    if( !self ){ printf("player malloc failed.\n"); return NULL; }
 
     self->head = ihead_fade_init();
-    if( !self){ printf("player head failed.\n"); return NULL; }
+    if( !self->head ){ printf("player head failed.\n"); return NULL; }
 
     self->transport = transport_init();
     if( !self ){ printf("player transport failed.\n"); return NULL; }
