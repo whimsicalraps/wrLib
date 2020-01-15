@@ -123,7 +123,7 @@ float* lp1_step_c_v(filter_lp1_t* f, float* buffer, uint16_t size)
 
 filter_lp1_a_t* lp1_a_init( void )
 {
-    filter_lp1_a_t* self = malloc( sizeof( lp1_a_init ) );
+    filter_lp1_a_t* self = malloc( sizeof( filter_lp1_a_t ) );
     if( !self ){ printf("Lp1_A malloc failed\n"); return NULL; }
 	self->y      = 0;
 	self->c_rise = 0.98;
