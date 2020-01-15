@@ -18,12 +18,13 @@ delay_t* delay_init( int samples )
     self->buf = buffer_init( sizeof(float), samples, buffer_interface_init() );
     self->play = player_init( self->buf );
 
-    // params
     player_playing( self->play, true );
-    player_speed( self->play, 1.0 );
     player_recording( self->play, true );
     player_rec_level( self->play, 1.0 );
-    player_pre_level( self->play, 0.9 );
+
+    // params
+    delay_rate( self, 1.0 );
+    delay_feedback( self, 0.9 );
 
     return self;
 }
