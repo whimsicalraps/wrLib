@@ -83,6 +83,8 @@ void _poke_v( buffer_interface_t* self
     int abscount = (count>=0) ? count : -count;
     float* buffer = (float*)self->buf->b;
     for( int i=0; i<abscount; i++ ){
+        while( origin < 0 ){ origin += self->buf->len; }
+        while( origin >= self->buf->len ){ origin -= self->buf->len; }
         buffer[origin] = *s++;
         origin += dir;
     }
