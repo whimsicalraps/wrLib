@@ -14,6 +14,11 @@ queue_t* queue_init( int length)
     return self;
 }
 
+void queue_deinit( queue_t* self )
+{
+    free( self ); self = NULL;
+}
+
 int queue_space( queue_t* self ){ return self->length - self->count; }
 
 int queue_enqueue( queue_t* self )

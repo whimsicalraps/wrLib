@@ -10,6 +10,7 @@ typedef struct{
 } queue_t;
 
 queue_t* queue_init( int length);
+void queue_deinit( queue_t* self );
 
 // returns valid array index for success
 // returns -1 for over/underflow
