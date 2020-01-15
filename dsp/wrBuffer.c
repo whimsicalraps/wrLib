@@ -30,8 +30,9 @@ buffer_t* buffer_init( size_t bytes_per_value
 void buffer_deinit( buffer_t* self )
 {
     buffer_free( self );
-    buffer_interface_t* i = ((buffer_interface_t*)(self->interface));
-    i->free(i);
+    buffer_interface_t* bi = ((buffer_interface_t*)(self->interface));
+    if( bi->free != NULL ){ bi->free(bi); } // if the buffer_interface has a free fn
+    free(bi); bi = NULL;
     free(self); self = NULL;
 }
 
