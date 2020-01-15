@@ -15,11 +15,11 @@ typedef struct buffer_interface{
     buffer_t* buf;
 
     // user-provided fnptrs for access
-    float** (*points)( struct buffer_interface*, float**, int, int);
+    //float** (*points)( struct buffer_interface*, float**, int, int);
     float* (*peek_v)( struct buffer_interface*, float*, int, int);
-    float (*peek)( struct buffer_interface*, int );
+    //float (*peek)( struct buffer_interface*, int );
     void (*poke_v)( struct buffer_interface*, float*, int, int);
-    void (*poke)( struct buffer_interface*, int, float, float );
+    //void (*poke)( struct buffer_interface*, int, float, float );
     bool (*request)( struct buffer_interface*, int );
     void (*free)( struct buffer_interface* );
 
@@ -29,23 +29,26 @@ typedef struct buffer_interface{
 
 // TODO change to void* instead of buffer_interface_t* pointing at userdata instead
 // saves dereferencing later on
-typedef float** (*buffer_points_t)( buffer_interface_t* self, float** dst, int origin, int count );
-typedef float* (*buffer_peek_v_t)( buffer_interface_t* self, float* dst, int origin, int count );
-typedef float (*buffer_peek_t)( buffer_interface_t* self, int location );
-typedef void (*buffer_poke_v_t)( buffer_interface_t* self, float* dst, int origin, int count );
-typedef void (*buffer_poke_mac_t)( buffer_interface_t* self, int* location, float mult, float accum );
-typedef bool (*buffer_request_t)( buffer_interface_t* self, int location );
+//typedef float** (*buffer_points_t)( buffer_interface_t*, float**, int, int );
+typedef float* (*buffer_peek_v_t)( buffer_interface_t*, float*, int, int );
+//typedef float (*buffer_peek_t)( buffer_interface_t* self, int );
+typedef void (*buffer_poke_v_t)( buffer_interface_t*, float*, int, int );
+//typedef void (*buffer_poke_mac_t)( buffer_interface_t*, int*, float, float );
+typedef bool (*buffer_request_t)( buffer_interface_t*, int );
 
-buffer_t* buffer_init( size_t bytes_per_value, int count, buffer_interface_t* interface );
+// setup
+buffer_t* buffer_init( size_t bytes_per_value
+                     , int count
+                     , buffer_interface_t* interface );
 void buffer_deinit( buffer_t* self );
 
 buffer_t* buffer_new( buffer_t* self, size_t bytes_per_value, int length );
 buffer_t* buffer_load_and_own( buffer_t* self, float* buffer, int length );
 
 // these accessors wrap a user-provided implementation through buffer_interface_t
-float** buffer_points( buffer_t* self, float** dst, int origin, int count );
+//float** buffer_points( buffer_t* self, float** dst, int origin, int count );
 float* buffer_peek_v( buffer_t* self, float* dst, int origin, int count );
-float buffer_peek( buffer_t* self, int location );
+//float buffer_peek( buffer_t* self, int location );
 void buffer_poke_v( buffer_t* self, float* dst, int origin, int count );
-void buffer_poke_mac( buffer_t* self, int location, float mult, float accum );
+//void buffer_poke_mac( buffer_t* self, int location, float mult, float accum );
 bool buffer_request( buffer_t* self, int location );
