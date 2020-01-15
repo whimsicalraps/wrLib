@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../wrLib/wrQueue.h"
+#include "wrQueue.h"
 
 typedef struct{
     int max_stages;

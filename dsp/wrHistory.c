@@ -29,7 +29,7 @@ history_t* history_init( int max_stages, int max_block_size )
     }
 
     // pointers to each stage
-    self->h = malloc( sizeof(float) * self->max_stages );
+    self->h = malloc( sizeof(float*) * self->max_stages );
     if( !self->h ){
         printf("history->h couldn't malloc.\n");
         free(self->history); self->history = NULL;
