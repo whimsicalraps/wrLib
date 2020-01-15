@@ -22,7 +22,7 @@ player_t* player_init( buffer_t* buffer )
     if( !self->head ){ printf("player head failed.\n"); return NULL; }
 
     self->transport = transport_init();
-    if( !self ){ printf("player transport failed.\n"); return NULL; }
+    if( !self->transport ){ printf("player transport failed.\n"); return NULL; }
 
     self->speed = 0.0;
     player_load( self, buffer );
@@ -36,6 +36,7 @@ player_t* player_init( buffer_t* buffer )
 
 void player_deinit( player_t* self )
 {
+    transport_deinit( self->transport );
     ihead_fade_deinit( self->head );
     free(self); self = NULL;
 }
