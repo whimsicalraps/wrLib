@@ -33,6 +33,7 @@ typedef struct func_gen{
 
 // Initialization
 func_gen_t* function_init( int loop );
+void function_deinit( func_gen_t* self );
 
 // Param functions
 

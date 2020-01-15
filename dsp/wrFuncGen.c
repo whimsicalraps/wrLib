@@ -4,7 +4,7 @@
 #include <stdlib.h> // malloc
 #include <stdio.h> // printf
 
-#include "../wrLib/wrMath.h"
+#include "wrMath.h"
 
 func_gen_t* function_init( int loop )
 {
@@ -26,6 +26,11 @@ func_gen_t* function_init( int loop )
     self->r_up          = 1;
     self->r_down        = 1;
     return self;
+}
+
+void function_deinit( func_gen_t* self )
+{
+    free(self); self = NULL;
 }
 
 // Param Functions
@@ -189,10 +194,9 @@ void function_ramp_v_global( uint16_t b_size
 	// bandlimiting based on base pitch of function
 	for(uint16_t i=0;i<b_size;i++){
 		float t = ctrl_rate + *audio_rate2++;
+        t = (t<0.0) ? 0 : (t>1.0) ? 1.0 : t;
 		*ramp_up2 = 0.501002
-		            / ( _Lim01( t ) // careful it's a macro!
-		              + 0.001002
-		              );
+		            / (t + 0.001002);
 		*ramp_down2++ = *ramp_up2
 		                / ( *ramp_up2 * 2.0
 		                  - 1.0
@@ -217,10 +221,9 @@ float* function_ramp_v( func_gen_t* self
     // bandlimiting based on base pitch of function
     for(uint16_t i=0;i<b_size;i++){
         float t = ctrl_rate + *audio_rate2++;
+        t = (t<min) ? min : (t>max) ? max : t;
         *ramp_up2 = 0.501002
-                    / ( _Lim( t, min, max ) // careful it's a macro!
-                      + 0.001002
-                      );
+                    / (t + 0.001002);
         *ramp_down2++ = *ramp_up2
                         / ( *ramp_up2 * 2.0
                           - 1.0
