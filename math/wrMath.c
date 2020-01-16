@@ -110,63 +110,6 @@ uint8_t max_u8(uint8_t a, uint8_t b) {
 // block processing math functions //
 /////////////////////////////////////
 
-void lim_v32_32(int32_t* in, int32_t min, int32_t max, int32_t* out, uint16_t size) {
-	int32_t* in2=in;
-	int32_t* out2=out;
-
-	for(uint16_t i=0; i<size; i++) {
-		if(*in2 < min) {
-			*out2++ = min; // lower limit
-			in2++;
-		}
-		else if(*in2 > max) {
-			*out2++ = max; // upper limit
-			in2++;
-		}
-		else {
-			*out2++ = *in2++; // echo in range
-		}
-	}
-}
-void add_v32_v32_sat24(int32_t* a, int32_t* b, int32_t* out, uint16_t size){
-	int32_t* a2=a;
-	int32_t* b2=b;
-	int32_t* out2=out;
-
-	for(uint16_t i=0; i<size; i++) {
-		*out2 = (*a2++) + (*b2++);
-
-		if(*out2 < MIN24b) {
-			*out2++ = MIN24b;
-		}
-		else if(*out2 > MAX24b) {
-			*out2++ = MAX24b; // upper limit
-		}
-		else { out2++; }
-	}
-}
-
-void muladd_v32_f_v32_sat24(int32_t* in, float mul, int32_t* add, int32_t* out, uint16_t size) {
-	int32_t* in2 = in;
-	int32_t* add2 = add;
-	int32_t* out2 = out;
-
-	for(uint16_t i=0; i<size; i++) {
-			// multiply v32 by float (in * thrulevel)
-			// add above(vf) to (vi)output
-		*out2 = (int32_t)((float)(*in2++) * mul) + (*add2++);
-			// saturate to 24b
-		if(*out2 < MIN24b) {
-			*out2++ = MIN24b;
-		}
-		else if(*out2 > MAX24b) {
-			*out2++ = MAX24b; // upper limit
-		}
-		else { out2++; }
-	}
-}
-
-
 void lim_vf_f(float* in, float min, float max, float* out, uint16_t size) {
 	float* in2=in;
 	float* out2=out;
@@ -188,15 +131,6 @@ float* lim_vf_audio( float* audio, int size )
 		else                {  s++; } // don't change
 	}
     return audio;
-}
-
-// set an array to a single value
-void set_v32_32(int32_t b, int32_t* out, uint16_t size) {
-	int32_t* out2=out; // point to start of arrays
-
-	for(uint16_t i=0; i<size; i++) {
-		*out2++ = b;
-	}	
 }
 
 	//////////////////////////
@@ -318,61 +252,6 @@ void interp_lin_f_vvf(float* a, float* b, float c, float* out, uint16_t size) {
 		a2++;
 	}
 }
-	//////////////////////////
-	//////////////// SET VALUE
-
-// copy whole vector
-void set_v8_v8(uint8_t* b, uint8_t* out, uint16_t size) {
-	uint8_t* b2=b;
-	uint8_t* out2=out; // point to start of arrays
-
-	for(uint16_t i=0; i<size; i++) {
-		*out2++ = (*b2++);
-	}
-}
-
-// set vector to a constant
-void set_v8_8(uint8_t b, uint8_t* out, uint16_t size) {
-	uint8_t* out2=out; // point to start of arrays
-
-	for(uint16_t i=0; i<size; i++) {
-		*out2++ = b;
-	}	
-}
-
-	//////////////////////////
-	////////////////////// ADD
-
-// add two vectors
-void add_v8_v8(uint8_t* a, uint8_t* b, uint8_t* sum, uint16_t size) {
-	uint8_t* a2=a;
-	uint8_t* b2=b;
-	uint8_t* sum2=sum; // point to start of arrays
-
-	for(uint16_t i=0; i<size; i++) {
-		*sum2++ = (*a2++) + (*b2++);
-	}
-}
-
-// shift vector by scalar
-void add_v8_8(uint8_t* a, uint8_t b, uint8_t* sum, uint16_t size) {
-	uint8_t* a2=a;
-	uint8_t* sum2=sum; // point to start of arrays
-
-	for(uint16_t i=0; i<size; i++) {
-		*sum2++ = (*a2++) + b;
-	}	
-}
-
-void add_v32_32(int32_t* a, int32_t b, int32_t* sum, uint16_t size) {
-	int32_t* a2=a;
-	int32_t* sum2=sum; // point to start of arrays
-
-	for(uint16_t i=0; i<size; i++) {
-		*sum2++ = (*a2++) + b;
-	}	
-}
-
 /*
 void lim_vf_f(float* in, float min, float max, float* out, uint16_t size) {
 	float* in2=in;
@@ -386,74 +265,3 @@ void lim_vf_f(float* in, float min, float max, float* out, uint16_t size) {
 	}
 }
 */
-
-	//////////////////////////
-	////////////////// BITWISE
-
-
-// bitwise OR a vector with a single mask
-void OR_v8_8(uint8_t* a, uint8_t mask, uint8_t* out, uint16_t size) {
-	uint8_t* a2=a;
-	uint8_t* out2=out; // point to start of arrays
-
-	for(uint16_t i=0; i<size; i++) {
-		*out2++ = (*a2++) | mask;
-	}	
-}
-
-// bitwise AND a vector with a single mask
-void AND_v8_8(uint8_t* a, uint8_t mask, uint8_t* out, uint16_t size) {
-	uint8_t* a2=a;
-	uint8_t* out2=out; // point to start of arrays
-
-	for(uint16_t i=0; i<size; i++) {
-		*out2++ = (*a2++) & mask;
-	}	
-}
-
-// left bitshift
-void SHL_v8_8(uint8_t* a, uint8_t shift, uint8_t* out, uint16_t size) {
-	uint8_t* a2=a;
-	uint8_t* out2=out; // point to start of arrays
-
-	for(uint16_t i=0; i<size; i++) {
-		*out2++ = (*a2++) << shift;
-	}	
-}
-
-// right bitshift
-void SHR_v8_8(uint8_t* a, uint8_t shift, uint8_t* out, uint16_t size) {
-	uint8_t* a2=a;
-	uint8_t* out2=out; // point to start of arrays
-
-	for(uint16_t i=0; i<size; i++) {
-		*out2++ = (*a2++) >> shift;
-	}	
-}
-
-// right bitshift
-// about 30% faster!
-void SHR_v32_32(int32_t* a, uint16_t shift, int32_t* out, uint16_t size) {
-	int32_t* a2=a;
-	int32_t* out2=out; // point to start of arrays
-
-	for(uint16_t i=0; i<size; i++) {
-		*out2++ = (*a2++) >> shift;
-	}	
-}
-void SHRadd_v32_32(int32_t* a, uint16_t shift, int32_t add, int32_t* out, uint16_t size) {
-	int32_t* a2=a;
-	int32_t* out2=out; // point to start of arrays
-
-	for(uint16_t i=0; i<size; i++) {
-		*out2++ = ((*a2++) >> shift) + add;
-	}	
-}
-
-
-int16_t max_s16( int16_t a, int16_t b )
-{
-    return (( a < b )
-                ? a
-                : b );
-}

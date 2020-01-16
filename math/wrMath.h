@@ -3,29 +3,6 @@
 #include <stdint.h>
 #include "wrGlobals.h"
 
-///////////////
-// ok, so rather than having tiny helper functions
-// instead they can be macros!
-// use an underscore and first Capital (camel) as a 'this is a macro!' warning
-// they type-agnostic! yay!
-//
-#define _Abs(a)    do{(a < 0) ? -(a) : a}while(0);
-#define _Max(a, b) do{((a) > (b)) ? (a) : (b)}while(0);
-#define _Min(a, b) do{((a) < (b)) ? (a) : (b)}while(0);
-/*#define _Limit(in, min, max) (  \
-			(in) > (min)        \
-				? ((in) < (max) \
-					? (in)      \
-					: (max))    \
-				: (min))        \
-*/
-#define _Swap(a, b) do{ a ^= b; b ^= a; a ^= b; }while(0);
-#define _Lim01(a) do{(a > 1) ? 1 : ((a < 0) ? 0 : a )}while(0);
-#define _Lim(a,min,max) do{(a > max) ? max : ((a < min) ? min : a )}while(0);
-
-// WARNING: doesn't work for negative numbers
-#define _GetFract(a) ( a - (float)(int)a )
-
 ///////////////////////////////////////////////////////
 
 // WEIRD FUNCTIONS
@@ -91,29 +68,3 @@ uint8_t max_u8(uint8_t a, uint8_t b); // returns the higher of two u8
 	// marginally slower
 	void interp_lin_f_v(float* a, float* b, float* c, float* out, uint16_t size);
 	void interp_lin_f_vvf(float* a, float* b, float c, float* out, uint16_t size);
-
-// int32_t
-	// LOGIC
-	void lim_v32_32(int32_t* in, int32_t min, int32_t max, int32_t* out, uint16_t size);
-	void add_v32_v32_sat24(int32_t* a, int32_t* b, int32_t* out, uint16_t size);
-	void muladd_v32_f_v32_sat24(int32_t* in, float mul, int32_t* add, int32_t* out, uint16_t size);
-	// ADD
-	void add_v32_32(int32_t* a, int32_t b, int32_t* sum, uint16_t size);
-
-	// BITWISE
-	void SHR_v32_32(int32_t* a, uint16_t shift, int32_t* out, uint16_t size); // right SHIFT vector by constant
-	void SHRadd_v32_32(int32_t* a, uint16_t shift, int32_t add, int32_t* out, uint16_t size);
-// uint8_t
-	// SET
-	void set_v8_v8(uint8_t* b, uint8_t* out, uint16_t size);
-	void set_v8_8(uint8_t b, uint8_t* out, uint16_t size);
-
-	// ADD
-	void add_v8_v8(uint8_t* a, uint8_t* b, uint8_t* sum, uint16_t size);
-	void add_v8_8(uint8_t* a, uint8_t b, uint8_t* sum, uint16_t size);
-
-	// BITWISE
-	void OR_v8_8(uint8_t* a, uint8_t mask, uint8_t* out, uint16_t size); // OR vector w mask
-	void AND_v8_8(uint8_t* a, uint8_t mask, uint8_t* out, uint16_t size); // AND vector w mask
-	void SHL_v8_8(uint8_t* a, uint8_t shift, uint8_t* out, uint16_t size); // left SHIFT vector by constant
-	void SHR_v8_8(uint8_t* a, uint8_t shift, uint8_t* out, uint16_t size); // right SHIFT vector by constant
