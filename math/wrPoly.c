@@ -50,7 +50,7 @@ int8_t poly_assign_note( poly_alloc_t* self
                        )
 {
 	// note on
-	if( note == 0x8000 ){ return -1; } // invalid pitch
+	if( note == (int16_t)0x8000 ){ return -1; } // invalid pitch
 
 	// in future, search for note w same pitch
 
@@ -66,7 +66,7 @@ int8_t poly_kill_note( poly_alloc_t* self
                      , int16_t       note
                      )
 {
-	if( note == 0x8000 ){ return -1; } // invalid pitch
+	if( note == (int16_t)0x8000 ){ return -1; } // invalid pitch
 	
 	// search for match in self->notes
 	for( uint8_t i=0; i < self->voice_count; i++){
