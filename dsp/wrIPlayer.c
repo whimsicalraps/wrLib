@@ -176,7 +176,8 @@ float player_get_loop_end( player_t* self )
 
 // this is an abstraction of a 'tape head'
 // TODO rename!
-#define LEAD_IN ((float)64.0)
+//#define LEAD_IN ((float)64.0)
+#define LEAD_IN ((float)0.0)
 float player_step( player_t* self, float in )
 {
     if( !self->buf ){ return 0.0; } // no buffer available
