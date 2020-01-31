@@ -170,8 +170,6 @@ void ihead_fade_poke( ihead_fade_t*  self
                     )
 {
     if( self->fade_countdown > 0 ){
-        self->fade_countdown--;
-
 // FIXME these linear fades cause volume bumps at the loop points when recording
         // see: https://github.com/catfact/softcut/issues/4
     // basic form would apply the pre-fade as a shorter window at the extremes
@@ -193,13 +191,13 @@ void ihead_fade_poke( ihead_fade_t*  self
         ihead_pre_level( self->head[self->fade_active_head], self->fade_pre_level );
         ihead_poke( self->head[self->fade_active_head], buf, speed, input );
     }
-
 }
 
 float ihead_fade_update_phase( ihead_fade_t* self, float speed )
 {
     self->head[ self->fade_active_head ]->rphase += speed;
     if( self->fade_countdown > 0 ){ // 'inactive' head is still running
+        self->fade_countdown--;
         self->head[!self->fade_active_head ]->rphase += speed;
     }
     return self->head[ self->fade_active_head ]->rphase;
