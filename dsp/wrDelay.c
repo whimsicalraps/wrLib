@@ -52,9 +52,13 @@ void delay_feedback( delay_t* self, float feedback )
     player_pre_level( self->play, feedback );
 }
 
+// Set a sub-loop in the buffer which contains the current playhead
+// Attempts to ensure the newest material stays in the loop brace
+//  1. Sub-divide the total time into multiples of 'fraction'
+//  2. Loop the 'fraction' that contains the current playhead
 void delay_length( delay_t* self, float fraction )
 {
-    float bdiv = self->play->tape_end * fraction; // length of the new brace
+    float bdiv = self->play->tape_end * fraction;
     int whole_divs = (int)(player_get_goto( self->play ) / bdiv);
     float start = (float)whole_divs * bdiv;
 
