@@ -25,6 +25,11 @@ void VU_time( VU_meter_t* self, float slew)
 	lp1_set_coeff( self->smooth, slew );
 }
 
+float VU_get( VU_meter_t* self )
+{
+    return lp1_get_out( self->smooth );
+}
+
 float VU_step( VU_meter_t* self, float in )
 {
 	// sum of squares

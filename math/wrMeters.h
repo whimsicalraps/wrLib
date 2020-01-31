@@ -13,3 +13,4 @@ VU_meter_t* VU_init( void );
 void VU_deinit( VU_meter_t* self );
 void VU_time( VU_meter_t* self, float slew);
 float VU_step( VU_meter_t* self, float in );
+float VU_get( VU_meter_t* self );
