@@ -200,7 +200,7 @@ float* lpgate_v_filt( lpgate_t* self
                     , float*    buffer
                     , int       b_size
                     ){
-    filter_v( self, level, buffer, b_size );
+    return filter_v( self, level, buffer, b_size );
 }
 
 float* lpgate_v_gate( lpgate_t* self
@@ -208,5 +208,5 @@ float* lpgate_v_gate( lpgate_t* self
                     , float*    buffer
                     , int       b_size
                     ){
-    gate_v( self, level, buffer, b_size );
+    return gate_v( self, level, buffer, b_size );
 }
