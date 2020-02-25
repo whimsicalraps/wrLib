@@ -3,8 +3,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "../wrLib/wrMath.h"
-#include "../wrLib/wrGlobals.h"
+#include "wrMath.h"
+#include "wrGlobals.h"
 #include "wrOscSine.h"
 
 // verbose names for switch statement
