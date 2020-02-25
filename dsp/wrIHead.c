@@ -169,27 +169,30 @@ void ihead_fade_poke( ihead_fade_t*  self
                     , float          input
                     )
 {
-    if( self->fade_countdown > 0 ){
-// FIXME these linear fades cause volume bumps at the loop points when recording
-        // see: https://github.com/catfact/softcut/issues/4
-    // basic form would apply the pre-fade as a shorter window at the extremes
-    // TODO have only be listening without input, so reconsider after working with ins
-        ihead_rec_level( self->head[!self->fade_active_head]
-                       , self->fade_rec_level * (1.0 - self->fade_phase) );
-        ihead_pre_level( self->head[self->fade_active_head]
-                       , self->fade_pre_level + self->fade_phase * (1.0 - self->fade_pre_level ) );
-        ihead_poke( self->head[!self->fade_active_head], buf, speed, input );
+    if( ihead_fade_is_recording( self ) ){ // skip poke if not recording
+        if( self->fade_countdown > 0 ){
+    // FIXME these linear fades cause volume bumps at the loop points when recording
+            // see: https://github.com/catfact/softcut/issues/4
+        // basic form would apply the pre-fade as a shorter window at the extremes
+        // TODO have only be listening without input, so reconsider after working with ins
+            // fade out
+            ihead_rec_level( self->head[!self->fade_active_head]
+                           , self->fade_rec_level * (1.0 - self->fade_phase) );
+            ihead_pre_level( self->head[self->fade_active_head]
+                           , self->fade_pre_level + self->fade_phase * (1.0 - self->fade_pre_level ) );
+            ihead_poke( self->head[!self->fade_active_head], buf, speed, input );
 
-        // fade in
-        ihead_rec_level( self->head[self->fade_active_head]
-                       , self->fade_rec_level * self->fade_phase );
-        ihead_pre_level( self->head[self->fade_active_head]
-                       , 1.0 + self->fade_phase * (self->fade_pre_level - 1.0) );
-        ihead_poke( self->head[self->fade_active_head], buf, speed, input );
-    } else { // single head
-        ihead_rec_level( self->head[self->fade_active_head], self->fade_rec_level );
-        ihead_pre_level( self->head[self->fade_active_head], self->fade_pre_level );
-        ihead_poke( self->head[self->fade_active_head], buf, speed, input );
+            // fade in
+            ihead_rec_level( self->head[self->fade_active_head]
+                           , self->fade_rec_level * self->fade_phase );
+            ihead_pre_level( self->head[self->fade_active_head]
+                           , 1.0 + self->fade_phase * (self->fade_pre_level - 1.0) );
+            ihead_poke( self->head[self->fade_active_head], buf, speed, input );
+        } else { // single head
+            ihead_rec_level( self->head[self->fade_active_head], self->fade_rec_level );
+            ihead_pre_level( self->head[self->fade_active_head], self->fade_pre_level );
+            ihead_poke( self->head[self->fade_active_head], buf, speed, input );
+        }
     }
 }
 
