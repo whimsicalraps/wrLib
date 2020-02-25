@@ -11,6 +11,8 @@ typedef struct{
     float      dest;
     float      level;
     float      vel;
+    float      time;
+    float      symmetry;
     float      rtime;
     float      ftime;
     vtl_mode_t mode;
@@ -20,19 +22,19 @@ typedef struct{
 // variable speed & ∆rise/fall relationship
 vtl_t* vtl_init( void );
 void vtl_deinit( vtl_t* self );
-void vtl_mode( vtl_t*     self
-             , vtl_mode_t mode
-             );
-void vtl_params( vtl_t* self
-               , float  speed
-               , float  ARratio
-               );
-void vtl_dest( vtl_t* self
-             , float dest
-             );
-float vtl_get_level( vtl_t* self );
-float vtl_step( vtl_t* self );
 
+// params
+void vtl_mode( vtl_t* self, vtl_mode_t mode );
+void vtl_time( vtl_t* self, float speed );
+void vtl_symmetry( vtl_t* self, float ARratio );
+void vtl_params( vtl_t* self, float speed, float ARratio );
+void vtl_dest( vtl_t* self, float dest );
+
+// getters
+float vtl_get_level( vtl_t* self );
+
+// signals
+float vtl_step( vtl_t* self );
 float* vtl_step_v( vtl_t* self
                  , float* out
                  , int    b_size

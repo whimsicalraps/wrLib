@@ -3,16 +3,28 @@
 #include <stdlib.h>
 #include <stdio.h> // printf
 
-//#include "wrGlobals.h"
-#include "wrMath.h" // math_get_ramps()
+#include "wrMath.h" // lim_f_0_1
+
+/////////////////////////////////////
+// private declarations
+
+static void vtl_update_params( vtl_t* self );
+
+
+/////////////////////////////////////
+// public interface
+
+// setup
 
 vtl_t* vtl_init( void ){
     vtl_t* self = malloc( sizeof( vtl_t ) );
     if(self == NULL){ printf("VTL: can't malloc!\n"); }
 
-	self->dest  = 0.0;
-	self->level = 0.0;
-	self->vel   = 1.0;
+    self->dest  = 0.0;
+    self->level = 0.0;
+    self->vel   = 1.0;
+    self->time     = 0.5;
+    self->symmetry = 0.5;
     vtl_mode( self, vtl_mode_sustain );
     vtl_params( self, 100.0, 0.1 );
     return self;
@@ -22,43 +34,59 @@ void vtl_deinit( vtl_t* self ){
     free(self); self = NULL;
 }
 
+// params
+
 void vtl_mode( vtl_t*     self
              , vtl_mode_t mode
              ){
-	self->mode = mode;
-	if(mode != vtl_mode_sustain){
-		self->dest = 0.0;
-	}
+    self->mode = mode;
+    if(mode != vtl_mode_sustain){
+        self->dest = 0.0;
+    }
+}
+
+void vtl_time( vtl_t* self, float speed )
+{
+    self->time = lim_f_0_1(speed);
+    vtl_update_params( self );
+}
+
+void vtl_symmetry( vtl_t* self, float ARratio )
+{
+    self->symmetry = lim_f_0_1(ARratio);
+    vtl_update_params( self );
 }
 
 void vtl_params( vtl_t* self
                , float  speed
                , float  ARratio
                ){
-    self->rtime = 0.5 / (0.998 * lim_f_0_1(ARratio) + 0.001);
-    self->ftime = 1.0 / (2.0 - (1.0 / self->rtime));
-	float ttime = lim_f( lim_f_0_1(speed) * 0.007
-                       , 0.000001
-                       , 1.0
-                       );
-	self->rtime *= ttime;
-	self->ftime *= ttime;
+    self->time = lim_f_0_1(speed);
+    self->symmetry = lim_f_0_1(ARratio);
+    vtl_update_params( self );
 }
+
 
 // unroll this in your loop if calling it per sample (otherwise it's minor improvement)
 void vtl_dest( vtl_t* self
              , float dest
              ){
-	self->dest = dest; // set destination value
+    self->dest = dest; // set destination value
 
-	if(dest > nFloor) {
-		self->vel = dest; // treat as 'velocity' input
-	}
+    if(dest > nFloor) {
+        self->vel = dest; // treat as 'velocity' input
+    }
 }
+
+
+// getters
 
 float vtl_get_level( vtl_t* self ){
-	return self->level;
+    return self->level;
 }
+
+
+// signals
 
 float vtl_step( vtl_t* self ){
 	float slew_mod;
@@ -200,3 +228,20 @@ float* vtl_step_v( vtl_t* self
 
 	return out;
 }
+
+
+// private helpers
+
+static void vtl_update_params( vtl_t* self )
+{
+    self->rtime = 0.5 / (0.998 * self->symmetry + 0.001);
+    self->ftime = 1.0 / (2.0 - (1.0 / self->rtime));
+    float ttime = lim_f( self->time * 0.007
+                       , 0.000001
+                       , 1.0
+                       );
+    self->rtime *= ttime;
+    self->ftime *= ttime;
+}
+
+
