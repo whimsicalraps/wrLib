@@ -8,6 +8,9 @@
 // private declarations
 
 static float tape_clamp( player_t* self, float location );
+bool player_is_going( player_t* self );
+void queue_goto( player_t* self, int sample );
+int get_queued_goto( player_t* self );
 
 
 ///////////////////////////////
@@ -63,7 +66,7 @@ void player_playing( player_t* self, bool is_play )
     transport_active( self->transport, is_play, 0 );
 }
 
-bool player_goto( player_t* self, int sample )
+void player_goto( player_t* self, int sample )
 {
     if( self->buf ){
         if( buffer_request( self->buf, sample ) ){
@@ -72,12 +75,13 @@ bool player_goto( player_t* self, int sample )
                              , sample
                              , (self->speed >= 0.0)
                              );
+            self->queued_location = -1;
         } else {
-            printf("TODO queue a request until it becomes available\n");
-            return true; // queued
+            self->going = true;
+            queue_goto( self, sample );
         }
     }
-    return false;
+    self->going = false;
 }
 
 void player_speed( player_t* self, float speed )
@@ -182,6 +186,12 @@ float player_step( player_t* self, float in )
 {
     if( !self->buf ){ return 0.0; } // no buffer available
 
+    int goto_dest = get_queued_goto( self );
+    if( goto_dest != -1 ){ // check if a queued goto is ready
+        //printf("try queued\n");
+        player_goto( self, goto_dest );
+    }
+
     //float motion = (self->playing) ? self->speed : 0.0;
     float motion = transport_speed_step( self->transport );
     float out = ihead_fade_peek( self->head, self->buf );
@@ -192,7 +202,7 @@ float player_step( player_t* self, float in )
                    );
     float new_phase = ihead_fade_update_phase( self->head, motion );
 
-    if( !self->going ){ // only edge check if there isn't a queued jump
+    if( !player_is_going( self ) ){ // only edge check if there isn't a queued jump
         float jumpto = -1.0;
         if( self->loop ){ // apply loop brace
             if( new_phase >= self->loop_end ){ jumpto = self->loop_start; }
@@ -203,10 +213,15 @@ float player_step( player_t* self, float in )
             else if( new_phase < LEAD_IN ){ jumpto = self->tape_end - LEAD_IN; }
         }
         if( jumpto >= 0.0 ){ // if there's a new jump, request it
-            self->going = player_goto( self, jumpto ); // true = busy, will callback on completion
+            player_goto( self, jumpto );
         }
     }
     return out;
+}
+
+bool player_is_going( player_t* self )
+{
+    return self->going;
 }
 
 float* player_step_v( player_t* self, float* io, int size )
@@ -228,4 +243,17 @@ static float tape_clamp( player_t* self, float location )
     if( location < LEAD_IN ){ location = LEAD_IN; }
     if( location > (self->tape_end - LEAD_IN) ){ location = self->tape_end - LEAD_IN; }
     return location;
+}
+
+void queue_goto( player_t* self, int sample )
+{
+    if( sample != self->queued_location ){
+        printf("TODO queue a request until it becomes available %i\n", sample);
+        self->queued_location = sample;
+    }
+}
+
+int get_queued_goto( player_t* self )
+{
+    return self->queued_location;
 }

@@ -17,6 +17,8 @@ typedef struct{
     float loop_end;
     float location; // 'playhead' pointer to buffer
     bool  going; // flag if a buf request is enqueued
+
+    int   queued_location; // -1 == none
 } player_t;
 
 // setup
@@ -27,7 +29,7 @@ void player_deinit( player_t* self );
 player_t* player_load( player_t* self, buffer_t* buffer );
 
 void player_playing( player_t* self, bool is_play );
-bool player_goto( player_t* self, int sample );
+void player_goto( player_t* self, int sample );
 void player_speed( player_t* self, float speed );
 void player_recording( player_t* self, bool is_record );
 void player_rec_level( player_t* self, float rec_level );
