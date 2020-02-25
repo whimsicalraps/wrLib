@@ -47,6 +47,12 @@ void delay_rate( delay_t* self, float rate )
     player_speed( self->play, rate );
 }
 
+#include <math.h>
+void delay_rate_v8( delay_t* self, float rate )
+{
+    player_speed( self->play, powf( 2.0, rate-1.0 ) );
+}
+
 void delay_feedback( delay_t* self, float feedback )
 {
     player_pre_level( self->play, feedback );
