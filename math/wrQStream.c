@@ -60,6 +60,10 @@ wrStream_t* QStream_init( int max_length, wrStream_t* stream )
     return &self.client; // return the new stream to the client
 }
 
+void QStream_deinit( void )
+{
+    free( self.ps ); self.ps = NULL;
+}
 
 ///////////////////////////////////////
 // virtual stream interface

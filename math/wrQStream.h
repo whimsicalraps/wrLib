@@ -18,3 +18,4 @@
 */
 
 wrStream_t* QStream_init( int max_length, wrStream_t* stream );
+void QStream_deinit( void );
