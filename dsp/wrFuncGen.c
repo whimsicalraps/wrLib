@@ -78,24 +78,25 @@ void function_trig_sustain( func_gen_t* self
 	self->sustain_state = state;*/
 }
 void function_trig_vari( func_gen_t* self
-	                   , uint8_t     state
-	                   , float       cutoff )
+                       , uint8_t     state
+                       , float       cutoff )
 {
-	// -1 is always, 0 is only in release, +1 is never
-	uint8_t tr;
-	(cutoff >= 0.0f)
-        // EOR to EOC
-		? ( tr = (self->id <= 0.0f) // is falling AND
-			  && (self->id > (cutoff - 1.0f)) ) //
-        // Always to EOR
-		: ( tr = (self->id <= 0.0f) // is falling     OR
-			  || (self->id > (1.0f + cutoff) ) ); // is rising
-	if( state && tr // is sensitive!
-     || self->go == 0 ){ // or channel is already stopped
-		self->id = MIN_POS_FLOAT; // reset
-		self->go = 1;
-	}
-	self->sustain_state = state;
+    // -1 is always, 0 is only in release, +1 is never
+    uint8_t tr = (cutoff >= 0.0f)
+                    // EOR to EOC
+                    ? ( (self->id <= 0.0f) // is falling AND
+                     && (self->id > (cutoff - 1.0f))
+                      )
+                    // Always to EOR
+                    : ( (self->id <= 0.0f) // is falling OR
+                     || (self->id > (1.0f + cutoff) )
+                      ); // is rising
+    if( (state && tr) // is sensitive!
+     || (self->go == 0) ){ // or channel is already stopped
+        self->id = MIN_POS_FLOAT; // reset
+        self->go = 1;
+    }
+    self->sustain_state = state;
 }
 void function_trig_burst( func_gen_t* self
                         , uint8_t     state
