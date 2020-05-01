@@ -89,13 +89,10 @@ float* function_v( func_gen_t* self
                  , float*      fm_return
                  , int         b_size
                  );
-void function_fmix_v( func_gen_t* self
-	                , uint16_t    b_size
-	                , float*      r_up
-	                , float*      r_dn
-	                , float*      fm_in
-	                , float*      fm_ix
-	                , float*      out
-	                );
-
+float* function_fmix_v( func_gen_t* self
+                      , float*      ramps // array of 2xb_size for UP/DOWN
+                      , float*      fm_ix // expects 0-1
+                      , float*      fm_return // modified in place
+                      , int         b_size
+                      );
 float function_lookup( float id );
