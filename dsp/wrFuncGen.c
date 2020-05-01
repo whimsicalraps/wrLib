@@ -169,7 +169,7 @@ float function_get_rate( func_gen_t* self )
 
 void function_fm_ix( func_gen_t* self, float ix )
 {
-	self->fm_ix = lim_f_0_1(ix) * 0.1f;
+	self->fm_ix = lim_f_n1_1(ix) * 0.1f;
 }
 
 // Audio Rate Process (helper function)
