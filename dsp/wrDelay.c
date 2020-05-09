@@ -53,6 +53,21 @@ void delay_rate_v8( delay_t* self, float rate )
     player_speed( self->play, powf( 2.0, rate-1.0 ) );
 }
 
+// set buffer length at current rate, to match seconds
+// if time is not acheivable at current rate, mul/div rate by 2 to acheive it
+void delay_time( delay_t* self, float samples )
+{
+    float adjusted_s = samples * delay_get_rate(self);
+    if( adjusted_s > self->play->tape_end ){ // FIXME account for LEAD_IN
+        printf("TODO delay_time too long\n");
+    } else {
+        printf("TODO check delay_time not too short\n");
+        player_loop( self->play, true );
+        //player_loop_start( self->play, start );
+        //player_loop_end( self->play, start + bdiv );
+    }
+}
+
 void delay_feedback( delay_t* self, float feedback )
 {
     // TODO use log scaling for smoother feel & better decay finetuning
@@ -67,6 +82,9 @@ void delay_feedback( delay_t* self, float feedback )
 //  2. Loop the 'fraction' that contains the current playhead
 void delay_length( delay_t* self, float fraction )
 {
+    if( fraction >= 0.999 ){ // max time turns off looping
+        player_loop( self->play, false );
+    } else { player_loop( self->play, true ); }
     float bdiv = self->play->tape_end * fraction;
     int whole_divs = (int)(player_get_goto( self->play ) / bdiv);
     float start = (float)whole_divs * bdiv;
@@ -80,6 +98,21 @@ void delay_subloop( delay_t* self, bool is_subloop )
     player_loop( self->play, is_subloop );
 }
 
+void delay_loop_to_here( delay_t* self, float length )
+{
+    float new_end = player_get_goto( self->play );
+    float new_start = new_end - length;
+    if( new_start < 0.0 ){
+        printf("FIXME: wrap around loop boundaries\n");
+        // for now, just pushing loop end point out
+        new_end -= new_start; // push out loop end (new_start is negative)
+        new_start = 0.0;
+    }
+    player_loop_start( self->play, new_start );
+    player_loop_end( self->play, new_end );
+    player_loop( self->play, true );
+}
+
 void delay_freeze( delay_t* self, bool is_freeze )
 {
     player_recording( self->play, !is_freeze );
@@ -89,6 +122,11 @@ void delay_freeze( delay_t* self, bool is_freeze )
 float delay_get_rate( delay_t* self )
 {
     return player_get_speed( self->play );
+}
+
+float delay_get_time( delay_t* self )
+{
+    return player_get_loop_end( self->play ) - player_get_loop_start( self->play );
 }
 
 float delay_get_feedback( delay_t* self )
@@ -109,7 +147,12 @@ bool delay_is_subloop( delay_t* self )
 
 bool delay_is_freeze( delay_t* self )
 {
-    return player_is_recording( self->play );
+    return !player_is_recording( self->play );
+}
+
+float delay_get_cut( delay_t* self )
+{
+    return player_get_goto( self->play );
 }
 
 
