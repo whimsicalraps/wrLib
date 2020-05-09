@@ -20,7 +20,7 @@ delay_t* delay_init( int samples )
 
     player_loop( self->play, true );
     player_playing( self->play, true );
-    player_recording( self->play, true );
+    delay_freeze( self, false );
     player_rec_level( self->play, 1.0 );
 
     // params
@@ -72,6 +72,11 @@ void delay_length( delay_t* self, float fraction )
     player_loop_end( self->play, start + bdiv );
 }
 
+void delay_freeze( delay_t* self, bool is_freeze )
+{
+    player_recording( self->play, !is_freeze );
+}
+
 // getters
 float delay_get_rate( delay_t* self )
 {
@@ -87,6 +92,11 @@ float delay_get_length( delay_t* self )
 {
     // TODO get length as portion of max_delay time
     return player_get_loop_end( self->play ) / self->play->tape_end;
+}
+
+bool delay_get_freeze( delay_t* self )
+{
+    return player_is_recording( self->play );
 }
 
 
