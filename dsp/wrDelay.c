@@ -126,18 +126,22 @@ float delay_get_rate( delay_t* self )
 
 float delay_get_time( delay_t* self )
 {
-    return player_get_loop_end( self->play ) - player_get_loop_start( self->play );
+    if( player_is_looping( self->play ) ){
+        // FIXME handle outside loops (ie end before start)
+        return player_get_loop_end( self->play ) - player_get_loop_start( self->play );
+    } else {
+        return self->play->tape_end;
+    }
+}
+
+float delay_get_length( delay_t* self )
+{
+    return delay_get_time( self ) / self->play->tape_end;
 }
 
 float delay_get_feedback( delay_t* self )
 {
     return player_get_pre_level( self->play );
-}
-
-float delay_get_length( delay_t* self )
-{
-    // TODO get length as portion of max_delay time
-    return player_get_loop_end( self->play ) / self->play->tape_end;
 }
 
 bool delay_is_subloop( delay_t* self )
