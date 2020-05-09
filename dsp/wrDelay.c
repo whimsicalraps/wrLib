@@ -18,7 +18,7 @@ delay_t* delay_init( int samples )
     self->buf = buffer_init( sizeof(float), samples, buffer_interface_init() );
     self->play = player_init( self->buf );
 
-    player_loop( self->play, true );
+    delay_subloop( self, true ); // FIXME should be false
     player_playing( self->play, true );
     delay_freeze( self, false );
     player_rec_level( self->play, 1.0 );
@@ -55,6 +55,9 @@ void delay_rate_v8( delay_t* self, float rate )
 
 void delay_feedback( delay_t* self, float feedback )
 {
+    // TODO use log scaling for smoother feel & better decay finetuning
+    // should this take loop time / rate into account?
+    // ie shorter loop time == higher feedback for matched decay time
     player_pre_level( self->play, feedback );
 }
 
@@ -70,6 +73,11 @@ void delay_length( delay_t* self, float fraction )
 
     player_loop_start( self->play, start );
     player_loop_end( self->play, start + bdiv );
+}
+
+void delay_subloop( delay_t* self, bool is_subloop )
+{
+    player_loop( self->play, is_subloop );
 }
 
 void delay_freeze( delay_t* self, bool is_freeze )
@@ -94,7 +102,12 @@ float delay_get_length( delay_t* self )
     return player_get_loop_end( self->play ) / self->play->tape_end;
 }
 
-bool delay_get_freeze( delay_t* self )
+bool delay_is_subloop( delay_t* self )
+{
+    return player_is_looping( self->play );
+}
+
+bool delay_is_freeze( delay_t* self )
 {
     return player_is_recording( self->play );
 }
