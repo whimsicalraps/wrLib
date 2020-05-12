@@ -44,6 +44,14 @@ void delay_deinit( delay_t* self )
 // setters
 void delay_rate( delay_t* self, float rate )
 {
+    self->play->transport->speeds.accel_standard = 0.001;
+    player_speed( self->play, rate );
+}
+
+void delay_rate_smoothed( delay_t* self, float rate )
+{
+    // FIXME add smoothing
+    self->play->transport->speeds.accel_standard = 0.00005;
     player_speed( self->play, rate );
 }
 

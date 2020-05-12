@@ -12,6 +12,7 @@ delay_t* delay_init( int samples );
 void delay_deinit( delay_t* self );
 
 void delay_rate( delay_t* self, float rate );
+void delay_rate_smoothed( delay_t* self, float rate );
 void delay_rate_v8( delay_t* self, float rate );
 void delay_time( delay_t* self, float samples );
 void delay_feedback( delay_t* self, float feedback );
