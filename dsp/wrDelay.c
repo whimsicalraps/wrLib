@@ -50,21 +50,42 @@ void delay_rate( delay_t* self, float rate )
 #include <math.h>
 void delay_rate_v8( delay_t* self, float rate )
 {
-    player_speed( self->play, powf( 2.0, rate-1.0 ) );
+    player_speed( self->play, powf( 2.0, rate ) );
 }
 
 // set buffer length at current rate, to match seconds
 // if time is not acheivable at current rate, mul/div rate by 2 to acheive it
 void delay_time( delay_t* self, float samples )
 {
-    float adjusted_s = samples * delay_get_rate(self);
-    if( adjusted_s > self->play->tape_end ){ // FIXME account for LEAD_IN
-        printf("TODO delay_time too long\n");
-    } else {
+    float rate = delay_get_rate(self);
+    float adjusted_s = samples * rate;
+    if( adjusted_s <= 0.0 ){
+        printf("delay_time zero or negative. set to max\n");
+        player_loop( self->play, false );
+    } else if( adjusted_s < 0.01 ){
         printf("TODO check delay_time not too short\n");
-        player_loop( self->play, true );
+        //player_loop( self->play, true );
         //player_loop_start( self->play, start );
         //player_loop_end( self->play, start + bdiv );
+    } else if( adjusted_s < self->play->tape_end ){ // FIXME account for LEAD_IN
+        // apply length directly
+        // FIXME rework after loop points can wrap over the buffer end
+        player_loop_start( self->play, 0 );
+        player_loop_end( self->play, adjusted_s );
+        player_loop( self->play, true );
+    } else {
+        while( adjusted_s >= self->play->tape_end ){
+            rate *= 0.5;
+            adjusted_s = samples * rate;
+        }
+        if( rate >= (1.0/16.0) ){
+            delay_rate( self, rate );
+            player_loop_start( self->play, 0 );
+            player_loop_end( self->play, adjusted_s );
+            player_loop( self->play, true );
+        } else {
+            printf("TODO what should the minimum speed be?\n");
+        }
     }
 }
 
@@ -126,12 +147,14 @@ float delay_get_rate( delay_t* self )
 
 float delay_get_time( delay_t* self )
 {
+    float t = 0.0;
     if( player_is_looping( self->play ) ){
         // FIXME handle outside loops (ie end before start)
-        return player_get_loop_end( self->play ) - player_get_loop_start( self->play );
+        t = player_get_loop_end( self->play ) - player_get_loop_start( self->play );
     } else {
-        return self->play->tape_end;
+        t = self->play->tape_end;
     }
+    return t / delay_get_rate( self );
 }
 
 float delay_get_length( delay_t* self )
