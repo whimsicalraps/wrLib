@@ -35,7 +35,6 @@ static void server_request( void );
 ////////////////////////////////////
 // constructor
 
-
 wrStream_t* QStream_init( int max_length, wrStream_t* stream )
 {
     self.q  = queue_init( max_length );
@@ -65,11 +64,16 @@ void QStream_deinit( void )
     free( self.ps ); self.ps = NULL;
 }
 
+void QStream_try( void )
+{
+    server_request();
+}
+
 ///////////////////////////////////////
 // virtual stream interface
 static int client_busy( void )
 {
-    return queue_space( self.q ) != 0;
+    return !queue_space( self.q );
 }
 
 static int client_request( wrStream_DIR_t direction
@@ -135,6 +139,11 @@ static void server_error( int errorcode, char* msg )
 static void server_request( void )
 {
     if( !(*self.server->busy)() ){
+
+        // TODO prioritize reads over writes up to N writes
+        // TODO attempt to combine read/write accesses
+            // just look at proceeding page (no need for deep search)
+
         int ix = queue_front( self.q ); // nb: dequeue happens in response
         if( ix == -1 ){
             //printf("queue empty\n"); // TODO useful when testing with SD card!!

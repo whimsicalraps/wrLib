@@ -17,5 +17,16 @@
 
 */
 
+typedef enum{ QS_Priority_FIFO  // process requests as they are received
+        // These two options maintain separate read & write buffers
+            , QS_Priority_READ  // always process reads before writes
+            , QS_Priority_WRITE // always process writes over reads
+} QStream_Priority_t;
+
+
+// TODO init to take a QStream_Priority_t for dynamic reordering of requests
+// TODO init to take a flag for 'combine sequential accesses'
 wrStream_t* QStream_init( int max_length, wrStream_t* stream );
 void QStream_deinit( void );
+
+void QStream_try( void );
