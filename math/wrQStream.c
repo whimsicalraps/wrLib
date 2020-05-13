@@ -151,12 +151,18 @@ static void server_request( void )
         }
 
         wrStream_PACKET_t* packet = &self.ps[ix];
-        if( (*self.server->request)( packet->direction
-                                   , packet->location
-                                   , packet->size_in_bytes
-                                   , packet->data
-                                   ) ){
-            printf("qstream request failed. TODO pop bad request?\n");
+        switch( (*self.server->request)( packet->direction
+                                       , packet->location
+                                       , packet->size_in_bytes
+                                       , packet->data
+                                       ) ){
+            case 1: // bad address
+                printf("Bad Address Request. TODO pop request.\n");
+                break;
+            case 2: // io error
+                // The access will be auto-retried because we don't pop the queue
+                break;
+            default: break;
         }
     }
 }
