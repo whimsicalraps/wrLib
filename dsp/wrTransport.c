@@ -51,7 +51,7 @@ void transport_active( transport_t*            self
                      , transport_motor_speed_t slew
                      )
 {
-    self->active = !!active;
+    self->active = active;
     lp1_set_coeff( self->speed_manual
                  , (self->active)
                         ? self->speeds.accel_nudge
@@ -202,7 +202,6 @@ float* transport_speed_block( transport_t* self
         }
     }
 
-    // limit nudged speed to +/-2.0
     float tmax = self->speeds.max_speed;
     float tmin = -self->speeds.max_speed;
     lp1_set_out( self->speed_slew
@@ -211,7 +210,6 @@ float* transport_speed_block( transport_t* self
                  , tmax
                  ) );
 
-    // slew toward new speed
     return lp1_step_c_v( self->speed_slew
                        , buffer
                        , b_size
