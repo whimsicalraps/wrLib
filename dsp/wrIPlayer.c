@@ -110,6 +110,11 @@ void player_pre_level( player_t* self, float pre_level )
     ihead_fade_pre_level( self->head, pre_level );
 }
 
+void player_head_order( player_t* self, bool play_before_erase )
+{
+    self->play_before_erase = play_before_erase;
+}
+
 void player_loop( player_t* self, bool is_looping )
 {
     self->loop = is_looping;
@@ -157,6 +162,11 @@ float player_get_rec_level( player_t* self )
 float player_get_pre_level( player_t* self )
 {
     return ihead_fade_get_pre_level( self->head );
+}
+
+bool player_is_head_order( player_t* self )
+{
+    return self->play_before_erase;
 }
 
 bool player_is_looping( player_t* self )
@@ -215,6 +225,11 @@ float player_step( player_t* self, float in )
         if( jumpto >= 0.0 ){ // if there's a new jump, request it
             player_goto( self, jumpto );
         }
+    }
+
+    // head order TODO might need slew or transition handling
+    if( self->play_before_erase && ihead_fade_is_recording( self->head ) ){
+        out *= ihead_fade_get_pre_level( self->head );
     }
     return out;
 }

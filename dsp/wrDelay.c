@@ -58,7 +58,7 @@ void delay_rate_smoothed( delay_t* self, float rate )
 #include <math.h>
 void delay_rate_v8( delay_t* self, float rate )
 {
-    player_speed( self->play, powf( 2.0, rate ) );
+    player_speed( self->play, exp2f( rate ) );
 }
 
 // set buffer length at current rate, to match seconds
