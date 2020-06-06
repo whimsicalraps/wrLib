@@ -178,7 +178,7 @@ void ihead_fade_poke( ihead_fade_t*  self
             // fade out
             ihead_rec_level( self->head[!self->fade_active_head]
                            , self->fade_rec_level * (1.0 - self->fade_phase) );
-            ihead_pre_level( self->head[self->fade_active_head]
+            ihead_pre_level( self->head[!self->fade_active_head]
                            , self->fade_pre_level + self->fade_phase * (1.0 - self->fade_pre_level ) );
             ihead_poke( self->head[!self->fade_active_head], buf, speed, input );
 
