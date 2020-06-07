@@ -30,6 +30,7 @@ player_t* player_init( buffer_t* buffer )
     self->speed = 0.0;
     player_load( self, buffer );
     player_playing( self, false );
+    player_head_order( self, false );
     player_rec_level( self, 0.0 );
     player_pre_level( self, 1.0 );
     player_loop(self, true);
