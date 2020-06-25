@@ -6,7 +6,7 @@
 #include "wrInterpolate.h"
 
 // necessary to keep read & write interpolation regions separate
-#define REC_OFFSET (-8) // write head trails read head
+#define REC_OFFSET (-2) // write head trails read head
 
 
 //////////////////////////////
@@ -109,7 +109,7 @@ void ihead_fade_jumpto( ihead_fade_t* self, buffer_t* buf, int phase, bool is_fo
     self->fade_phase = 0.0;
     float count = self->fade_length * 48000.0; // FIXME assume 48kHz samplerate
     self->fade_countdown = (int)count;
-    self->fade_increment = 1.0 / count;
+    if( count > 0 ){ self->fade_increment = 1.0 / count; }
 }
 
 

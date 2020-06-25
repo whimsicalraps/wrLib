@@ -13,8 +13,6 @@ typedef struct{
 
     float accel_standard;
     float accel_quick;
-    float accel_seek;
-    float accel_nudge;
 
     float nudge_release;
 } std_speeds_t;
@@ -28,10 +26,7 @@ typedef struct{
     float         speed_active;
     float         speed_inactive;
 
-    filter_lp1_t* speed_manual; // smoothing for manual changes
     float         nudge;      // how much are we currently nudging?
-    float         nudge_accum;
-
 } transport_t;
 
 
@@ -55,6 +50,7 @@ void transport_change_std_speeds( transport_t* self
 void transport_speed_active( transport_t* self, float speed );
 void transport_speed_inactive( transport_t* self, float speed );
 void transport_nudge( transport_t* self, float delta );
+void transport_unnudge( transport_t* self );
 
 
 /////////////////////////////////

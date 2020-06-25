@@ -14,10 +14,8 @@ transport_t* transport_init( void )
     transport_change_std_speeds( self
         , (std_speeds_t)
           { .max_speed      = 2.0
-          , .accel_standard = 0.001
+          , .accel_standard = 0.003
           , .accel_quick    = 0.05
-          , .accel_seek     = 0.001
-          , .accel_nudge    = 0.005
           , .nudge_release  = 0.002
           }
     );
@@ -29,10 +27,7 @@ transport_t* transport_init( void )
     self->speed_active   = 1.0;
     self->speed_inactive = 0.0;
 
-    self->speed_manual = lp1_init();
-    lp1_set_coeff( self->speed_manual, self->speeds.accel_seek );
     self->nudge       = 0.0;
-    self->nudge_accum = 0.0;
 
     return self;
 }
@@ -40,7 +35,6 @@ transport_t* transport_init( void )
 
 void transport_deinit( transport_t* self )
 {
-    lp1_deinit( self->speed_manual );
     lp1_deinit( self->speed_slew );
     free(self); self = NULL;
 }
@@ -52,11 +46,6 @@ void transport_active( transport_t*            self
                      )
 {
     self->active = active;
-    lp1_set_coeff( self->speed_manual
-                 , (self->active)
-                        ? self->speeds.accel_nudge
-                        : self->speeds.accel_seek
-                 );
     lp1_set_coeff( self->speed_slew
                  , (slew == transport_motor_standard)
                         ? self->speeds.accel_standard
@@ -92,7 +81,23 @@ void transport_speed_active( transport_t* self, float speed )
 
 void transport_nudge( transport_t* self, float delta )
 {
-    self->nudge = delta;
+    self->nudge += delta;
+    if( self->nudge > 2.0 ){ self->nudge = 2.0; }
+    else if( self->nudge < -2.0 ){ self->nudge = -2.0; }
+}
+
+
+void transport_unnudge( transport_t* self )
+{
+    if( self->nudge != 0.0 ){
+        if( self->nudge > nFloor ){
+            self->nudge -= self->speeds.nudge_release;
+        } else if( self->nudge < -nFloor ){
+            self->nudge += self->speeds.nudge_release;
+        } else {
+            self->nudge = 0.0;
+        }
+    }
 }
 
 
@@ -118,50 +123,12 @@ float transport_get_speed( transport_t* self )
 
 float transport_speed_step( transport_t* self )
 {
-    lp1_set_dest( self->speed_slew
-                , transport_get_speed( self )
-                );
-
-    // apply nudge / seek
-    if( self->nudge ){
-        if( self->active ){ // only nudge!
-            self->nudge_accum = lim_f( self->nudge_accum + self->nudge
-                                     , -0.01
-                                     ,  0.01
-                                     );
-        } else {
-            self->nudge_accum = lim_f( self->nudge_accum + self->nudge
-                                     , -self->speeds.max_speed
-                                     ,  self->speeds.max_speed
-                                     );
-        }
-    } else {
-        if( self->nudge_accum >= 0.0 ){
-            self->nudge_accum = lim_f( self->nudge_accum
-                                       - self->speeds.nudge_release
-                                     , 0.0
-                                     , self->speeds.max_speed
-                                     );
-        } else {
-            self->nudge_accum = lim_f( self->nudge_accum
-                                       + self->speeds.nudge_release
-                                     , -self->speeds.max_speed
-                                     , 0.0
-                                     );
-        }
-    }
-
-    // limit nudged speed to +/-2.0
-    float tmax =  self->speeds.max_speed;
-    float tmin = -self->speeds.max_speed;
-    lp1_set_out( self->speed_slew
-          , lim_f( lp1_get_out( self->speed_slew ) + self->nudge_accum
-                 , tmin
-                 , tmax
-                 ) );
-
-    // slew toward new speed
-    return lp1_step_internal( self->speed_slew );
+    return lp1_step( self->speed_slew
+                   , lim_f( transport_get_speed( self ) + self->nudge
+                          , -self->speeds.max_speed
+                          , self->speeds.max_speed
+                          )
+                   );
 }
 
 float* transport_speed_block( transport_t* self
@@ -169,46 +136,47 @@ float* transport_speed_block( transport_t* self
                             , int          b_size
                             )
 {
+    printf("FIXME this vector function is broken\n");
     lp1_set_dest( self->speed_slew
                 , transport_get_speed( self )
                 );
 
     // apply nudge / seek
-    if( self->nudge ){
-        if( self->active ){ // only nudge!
-            self->nudge_accum = lim_f( self->nudge_accum + self->nudge
-                                     , -0.01
-                                     ,  0.01
-                                     );
-        } else {
-            self->nudge_accum = lim_f( self->nudge_accum + self->nudge
-                                     , -self->speeds.max_speed
-                                     ,  self->speeds.max_speed
-                                     );
-        }
-    } else {
-        if( self->nudge_accum >= 0.0 ){
-            self->nudge_accum = lim_f( self->nudge_accum
-                                       - self->speeds.nudge_release
-                                     , 0.0
-                                     , self->speeds.max_speed
-                                     );
-        } else {
-            self->nudge_accum = lim_f( self->nudge_accum
-                                       + self->speeds.nudge_release
-                                     , -self->speeds.max_speed
-                                     , 0.0
-                                     );
-        }
-    }
-
-    float tmax = self->speeds.max_speed;
-    float tmin = -self->speeds.max_speed;
-    lp1_set_out( self->speed_slew
-          , lim_f( lp1_get_out( self->speed_slew ) + self->nudge_accum
-                 , tmin
-                 , tmax
-                 ) );
+//    if( self->nudge ){
+//        if( self->active ){ // only nudge!
+//            self->nudge_accum = lim_f( self->nudge_accum + self->nudge
+//                                     , -0.01
+//                                     ,  0.01
+//                                     );
+//        } else {
+//            self->nudge_accum = lim_f( self->nudge_accum + self->nudge
+//                                     , -self->speeds.max_speed
+//                                     ,  self->speeds.max_speed
+//                                     );
+//        }
+//    } else {
+//        if( self->nudge_accum >= 0.0 ){
+//            self->nudge_accum = lim_f( self->nudge_accum
+//                                       - self->speeds.nudge_release
+//                                     , 0.0
+//                                     , self->speeds.max_speed
+//                                     );
+//        } else {
+//            self->nudge_accum = lim_f( self->nudge_accum
+//                                       + self->speeds.nudge_release
+//                                     , -self->speeds.max_speed
+//                                     , 0.0
+//                                     );
+//        }
+//    }
+//
+//    float tmax = self->speeds.max_speed;
+//    float tmin = -self->speeds.max_speed;
+//    lp1_set_out( self->speed_slew
+//          , lim_f( lp1_get_out( self->speed_slew ) + self->nudge_accum
+//                 , tmin
+//                 , tmax
+//                 ) );
 
     return lp1_step_c_v( self->speed_slew
                        , buffer

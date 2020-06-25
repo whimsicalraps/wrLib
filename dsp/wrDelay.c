@@ -5,6 +5,7 @@
 
 #include "wrBufferInterface.h"
 
+static void delay_apply_rate( delay_t* self );
 
 //////////////////////////////////
 // setup
@@ -45,20 +46,34 @@ void delay_deinit( delay_t* self )
 void delay_rate( delay_t* self, float rate )
 {
     self->play->transport->speeds.accel_standard = 0.001;
-    player_speed( self->play, rate );
+    self->rate = rate;
+    delay_apply_rate( self );
 }
 
 void delay_rate_smoothed( delay_t* self, float rate )
 {
     // FIXME add smoothing
     self->play->transport->speeds.accel_standard = 0.00005;
-    player_speed( self->play, rate );
+    self->rate = rate;
+    delay_apply_rate( self );
 }
 
 #include <math.h>
 void delay_rate_v8( delay_t* self, float rate )
 {
-    player_speed( self->play, exp2f( rate ) );
+    self->rate = exp2f( rate );
+    delay_apply_rate( self );
+}
+
+void delay_rate_mod( delay_t* self, float mod )
+{
+    self->mod = mod; // TODO bounds?
+    delay_apply_rate( self );
+}
+
+static void delay_apply_rate( delay_t* self )
+{
+    player_speed( self->play, self->rate + self->mod );
 }
 
 // set buffer length at current rate, to match seconds
@@ -150,7 +165,7 @@ void delay_freeze( delay_t* self, bool is_freeze )
 // getters
 float delay_get_rate( delay_t* self )
 {
-    return player_get_speed( self->play );
+    return self->rate;
 }
 
 float delay_get_time( delay_t* self )

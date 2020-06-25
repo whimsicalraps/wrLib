@@ -6,6 +6,8 @@
 typedef struct{
     buffer_t* buf;
     player_t* play;
+    float     rate; // base rate, to apply modulation on top of
+    float     mod; // rate modulation amount
 } delay_t;
 
 delay_t* delay_init( int samples );
@@ -14,6 +16,7 @@ void delay_deinit( delay_t* self );
 void delay_rate( delay_t* self, float rate );
 void delay_rate_smoothed( delay_t* self, float rate );
 void delay_rate_v8( delay_t* self, float rate );
+void delay_rate_mod( delay_t* self, float mod );
 void delay_time( delay_t* self, float samples );
 void delay_feedback( delay_t* self, float feedback );
 void delay_length( delay_t* self, float fraction );

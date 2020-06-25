@@ -27,7 +27,8 @@ player_t* player_init( buffer_t* buffer )
     self->transport = transport_init();
     if( !self->transport ){ printf("player transport failed.\n"); return NULL; }
 
-    self->speed = 0.0;
+    player_speed( self, 0.0 );
+    self->motion = 0.0;
     player_load( self, buffer );
     player_playing( self, false );
     player_head_order( self, false );
@@ -64,7 +65,7 @@ player_t* player_load( player_t* self, buffer_t* buffer )
 void player_playing( player_t* self, bool is_play )
 {
     self->playing = is_play;
-    transport_active( self->transport, is_play, 0 );
+    transport_active( self->transport, is_play, transport_motor_standard );
 }
 
 void player_goto( player_t* self, int sample )
@@ -74,7 +75,7 @@ void player_goto( player_t* self, int sample )
             ihead_fade_jumpto( self->head
                              , self->buf
                              , sample
-                             , (self->speed >= 0.0)
+                             , (self->motion >= 0.0)
                              );
             self->queued_location = -1;
         } else {
@@ -87,13 +88,13 @@ void player_goto( player_t* self, int sample )
 
 void player_speed( player_t* self, float speed )
 {
-    float old_speed = self->speed;
     self->speed = speed;
     transport_speed_active( self->transport, speed );
-    if( (old_speed >= 0.0 && speed < 0.0)
-     || (old_speed <= 0.0 && speed > 0.0) ){
-        player_goto( self, player_get_goto(self) ); // reset head offset
-    }
+}
+
+void player_nudge( player_t* self, float amount )
+{
+    transport_nudge( self->transport, amount );
 }
 
 void player_recording( player_t* self, bool is_record )
@@ -150,6 +151,11 @@ float player_get_speed( player_t* self )
     return self->speed;
 }
 
+float player_get_speed_live( player_t* self )
+{
+    return self->motion;
+}
+
 bool player_is_recording( player_t* self )
 {
     return ihead_fade_is_recording( self->head );
@@ -203,15 +209,19 @@ float player_step( player_t* self, float in )
         player_goto( self, goto_dest );
     }
 
-    //float motion = (self->playing) ? self->speed : 0.0;
-    float motion = transport_speed_step( self->transport );
+    bool fwd = self->motion >= 0;
+    self->motion = transport_speed_step( self->transport );
+    if( fwd != (self->motion >= 0) ){ // sign change in speed
+        player_goto( self, player_get_goto(self) ); // reset head offset
+    }
+
     float out = ihead_fade_peek( self->head, self->buf );
     ihead_fade_poke( self->head
                    , self->buf
-                   , motion
+                   , self->motion
                    , in
                    );
-    float new_phase = ihead_fade_update_phase( self->head, motion );
+    float new_phase = ihead_fade_update_phase( self->head, self->motion );
 
     if( !player_is_going( self ) ){ // only edge check if there isn't a queued jump
         float jumpto = -1.0;
@@ -247,6 +257,7 @@ float* player_step_v( player_t* self, float* io, int size )
         *b = player_step( self, *b );
         b++;
     }
+    transport_unnudge( self->transport );
     return io;
 }
 
