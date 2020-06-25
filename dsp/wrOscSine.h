@@ -17,6 +17,8 @@ osc_sine_t* sine_init( void );
 void sine_deinit( osc_sine_t* self );
 
 // input fns
+    // where time = 0, oscillator stopped
+    //       time = 1, oscillator at sample rate
 void osc_sine_time( osc_sine_t* self, float time );
 void osc_sine_reset( osc_sine_t* self );
 
@@ -24,11 +26,11 @@ void osc_sine_reset( osc_sine_t* self );
 int8_t osc_sine_get_zc( osc_sine_t* self );
 
 // process
-float osc_sine_step( osc_sine_t* self, float fm );
+float osc_sine_step( osc_sine_t* self, float fm ); // fm == 0 is no mod
 void osc_sine_process_v( osc_sine_t* self
 	                   , uint16_t    b_size
-	                   , float*      exp_fm
-	                   , float*      lin_fm
+	                   , float*      exp_fm // expo scaler (*)
+	                   , float*      lin_fm // linear offset (+)
 	                   , float*      out );
 float* sine_process_base_v( osc_sine_t* self
 	                      , float*      out
