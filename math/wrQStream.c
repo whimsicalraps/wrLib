@@ -13,7 +13,7 @@ typedef struct{
     wrStream_PACKET_t* ps;
 } wrQStream_t;
 
-wrQStream_t self;
+wrQStream_t qstream;
 
 
 //////////////////////////////////
@@ -37,31 +37,31 @@ static void server_request( void );
 
 wrStream_t* QStream_init( int max_length, wrStream_t* stream )
 {
-    self.q  = queue_init( max_length );
-    self.ps = malloc( sizeof(wrStream_PACKET_t) * max_length );
+    qstream.q  = queue_init( max_length );
+    qstream.ps = malloc( sizeof(wrStream_PACKET_t) * max_length );
 
     // capture & complete the server-side stream
-    self.server = stream;
+    qstream.server = stream;
 
     // copy the server-stream into our new client stream
-    memcpy( &self.client, self.server, sizeof( wrStream_t ) );
+    memcpy( &qstream.client, qstream.server, sizeof( wrStream_t ) );
 
     // splice in the virtual-server qstream system
 
     // client busy & requests are sent to the queue system
-    self.client.busy    = &client_busy;
-    self.client.request = &client_request;
+    qstream.client.busy    = &client_busy;
+    qstream.client.request = &client_request;
 
     // server response & error callbacks via the queue system (for removing requests)
-    self.server->response = &server_response;
-    self.server->error    = &server_error;
+    qstream.server->response = &server_response;
+    qstream.server->error    = &server_error;
 
-    return &self.client; // return the new stream to the client
+    return &qstream.client; // return the new stream to the client
 }
 
 void QStream_deinit( void )
 {
-    free( self.ps ); self.ps = NULL;
+    free( qstream.ps ); qstream.ps = NULL;
 }
 
 void QStream_try( void )
@@ -73,7 +73,7 @@ void QStream_try( void )
 // virtual stream interface
 static int client_busy( void )
 {
-    return !queue_space( self.q );
+    return !queue_space( qstream.q );
 }
 
 static int client_request( wrStream_DIR_t direction
@@ -82,15 +82,15 @@ static int client_request( wrStream_DIR_t direction
                          , uint8_t*       data
                          )
 {
-    int ix = queue_enqueue( self.q );
+    int ix = queue_enqueue( qstream.q );
     if( ix == -1 ){ return 1; }
 
     // save the stream-request to the queue
-    wrStream_PACKET_t* packet = &self.ps[ix];
-    packet->direction     = direction;
-    packet->location      = location;
-    packet->size_in_bytes = size_in_bytes;
-    packet->data          = data;
+    wrStream_PACKET_t* packet = &qstream.ps[ix];
+    packet->direction         = direction;
+    packet->location          = location;
+    packet->size_in_bytes     = size_in_bytes;
+    packet->data              = data;
 
     server_request(); // in case the queue was empty (ie no ongoing request)
 
@@ -104,17 +104,17 @@ static int server_response( wrStream_DIR_t direction
                           )
 {
     // the request succeeded, so remove it from the queue
-    if( queue_dequeue( self.q ) == -1 ){
+    if( queue_dequeue( qstream.q ) == -1 ){
         printf("UH OH! shouldn't happen!\n");
         return 1;
     }
 
     // tell the client which request is complete
-    (*self.client.response)( direction
-                           , location
-                           , size_in_bytes
-                           , data
-                           );
+    (*qstream.client.response)( direction
+                              , location
+                              , size_in_bytes
+                              , data
+                              );
 
     server_request(); // initiate the next request in case the queue isn't empty
 
@@ -138,24 +138,24 @@ static void server_error( int errorcode, char* msg )
 
 static void server_request( void )
 {
-    if( !(*self.server->busy)() ){
+    if( !(*qstream.server->busy)() ){
 
         // TODO prioritize reads over writes up to N writes
         // TODO attempt to combine read/write accesses
             // just look at proceeding page (no need for deep search)
 
-        int ix = queue_front( self.q ); // nb: dequeue happens in response
+        int ix = queue_front( qstream.q ); // nb: dequeue happens in response
         if( ix == -1 ){
             //printf("queue empty\n"); // TODO useful when testing with SD card!!
             return;
         }
 
-        wrStream_PACKET_t* packet = &self.ps[ix];
-        switch( (*self.server->request)( packet->direction
-                                       , packet->location
-                                       , packet->size_in_bytes
-                                       , packet->data
-                                       ) ){
+        wrStream_PACKET_t* packet = &qstream.ps[ix];
+        switch( (*qstream.server->request)( packet->direction
+                                          , packet->location
+                                          , packet->size_in_bytes
+                                          , packet->data
+                                          ) ){
             case 1: // bad address
                 printf("Bad Address Request. TODO pop request.\n");
                 break;
