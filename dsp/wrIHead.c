@@ -4,6 +4,7 @@
 #include <stdio.h>
 
 #include "wrInterpolate.h"
+#include "../tables/delay_fades.h"
 
 // necessary to keep read & write interpolation regions separate
 #define REC_OFFSET (-2) // write head trails read head
@@ -170,28 +171,30 @@ void ihead_fade_poke( ihead_fade_t*  self
                     )
 {
     if( ihead_fade_is_recording( self ) ){ // skip poke if not recording
+        ihead_t* hA = self->head[self->fade_active_head];
         if( self->fade_countdown > 0 ){
-    // FIXME these linear fades cause volume bumps at the loop points when recording
-            // see: https://github.com/catfact/softcut/issues/4
-        // basic form would apply the pre-fade as a shorter window at the extremes
-        // TODO have only be listening without input, so reconsider after working with ins
+            ihead_t* hB = self->head[!self->fade_active_head];
+            float mphase = 1.0 - self->fade_phase;
+
             // fade out
-            ihead_rec_level( self->head[!self->fade_active_head]
-                           , self->fade_rec_level * (1.0 - self->fade_phase) );
-            ihead_pre_level( self->head[!self->fade_active_head]
-                           , self->fade_pre_level + self->fade_phase * (1.0 - self->fade_pre_level ) );
-            ihead_poke( self->head[!self->fade_active_head], buf, speed, input );
+            ihead_rec_level( hB, self->fade_rec_level
+                                 * rec_fade_LUT_get( mphase ) );
+            float lut = pre_fade_LUT_get(self->fade_phase);
+            float xf = 1.0 + lut*(self->fade_pre_level - 1.0);
+            ihead_pre_level( hB, xf);
+            ihead_poke( hB, buf, speed, input );
 
             // fade in
-            ihead_rec_level( self->head[self->fade_active_head]
-                           , self->fade_rec_level * self->fade_phase );
-            ihead_pre_level( self->head[self->fade_active_head]
-                           , 1.0 + self->fade_phase * (self->fade_pre_level - 1.0) );
-            ihead_poke( self->head[self->fade_active_head], buf, speed, input );
+            ihead_rec_level( hA, self->fade_rec_level
+                                 * rec_fade_LUT_get(self->fade_phase) );
+            lut = pre_fade_LUT_get( mphase );
+            xf = 1.0 + lut*(self->fade_pre_level - 1.0);
+            ihead_pre_level( hA, xf);
+            ihead_poke( hA, buf, speed, input );
         } else { // single head
-            ihead_rec_level( self->head[self->fade_active_head], self->fade_rec_level );
-            ihead_pre_level( self->head[self->fade_active_head], self->fade_pre_level );
-            ihead_poke( self->head[self->fade_active_head], buf, speed, input );
+            ihead_rec_level( hA, self->fade_rec_level );
+            ihead_pre_level( hA, self->fade_pre_level );
+            ihead_poke( hA, buf, speed, input );
         }
     }
 }
@@ -224,7 +227,8 @@ float ihead_fade_peek( ihead_fade_t* self, buffer_t* buf )
         float out = ihead_peek( self->head[ !self->fade_active_head ], buf );
         float in  = ihead_peek( self->head[  self->fade_active_head ], buf );
         self->fade_phase += self->fade_increment; // move through xfade
-        o = out + self->fade_phase * (in - out ); // apply xfade linearly
+        o  = out * equal_power_LUT_get(1.0 - self->fade_phase);
+        o += in * equal_power_LUT_get(self->fade_phase);
     } else { // single head
         o = ihead_peek( self->head[ self->fade_active_head ], buf );
     }

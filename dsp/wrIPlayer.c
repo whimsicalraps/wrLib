@@ -78,12 +78,14 @@ void player_goto( player_t* self, int sample )
                              , (self->motion >= 0.0)
                              );
             self->queued_location = -1;
+            self->going = false;
         } else {
             self->going = true;
             queue_goto( self, sample );
         }
+    } else {
+        self->going = false;
     }
-    self->going = false;
 }
 
 void player_speed( player_t* self, float speed )
@@ -197,8 +199,10 @@ float player_get_loop_end( player_t* self )
 
 // this is an abstraction of a 'tape head'
 // TODO rename!
-//#define LEAD_IN ((float)64.0)
-#define LEAD_IN ((float)0.0)
+#define LEAD_IN ((float)64.0)
+    // FIXME should be able to forgo LEAD_IN when looping whole buffer
+    // in fact -- it shouldn't use 'goto' but just wrap the indices
+//#define LEAD_IN ((float)0.0)
 float player_step( player_t* self, float in )
 {
     if( !self->buf ){ return 0.0; } // no buffer available

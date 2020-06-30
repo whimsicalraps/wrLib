@@ -67,6 +67,7 @@ void delay_rate_v8( delay_t* self, float rate )
 
 void delay_rate_mod( delay_t* self, float mod )
 {
+    // TODO use player_nudge to support mod natively
     self->mod = mod; // TODO bounds?
     delay_apply_rate( self );
 }
@@ -82,9 +83,11 @@ void delay_time( delay_t* self, float samples )
 {
     float rate = delay_get_rate(self);
     float adjusted_s = samples * rate;
-    if( adjusted_s <= 0.0 ){
-        printf("delay_time zero or negative. set to max\n");
+    if( adjusted_s < 0.0 ){
+        printf("delay_time negative. set to max\n");
         player_loop( self->play, false );
+    } else if( adjusted_s == 0.0 ){
+        printf("TODO set loop so that freq(0) == C3\n");
     } else if( adjusted_s < 0.01 ){
         printf("TODO check delay_time not too short\n");
         //player_loop( self->play, true );
