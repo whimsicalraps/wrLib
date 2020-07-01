@@ -81,6 +81,9 @@ void transport_speed_active( transport_t* self, float speed )
 
 void transport_nudge( transport_t* self, float delta )
 {
+    // cancel out the release offset
+    if( delta > 0.0 ){ delta += self->speeds.nudge_release; }
+    else { delta -= self->speeds.nudge_release; }
     self->nudge += delta;
     if( self->nudge > 2.0 ){ self->nudge = 2.0; }
     else if( self->nudge < -2.0 ){ self->nudge = -2.0; }
@@ -90,13 +93,22 @@ void transport_nudge( transport_t* self, float delta )
 void transport_unnudge( transport_t* self )
 {
     if( self->nudge != 0.0 ){
-        if( self->nudge > nFloor ){
+        if( self->nudge > 0.0 ){
             self->nudge -= self->speeds.nudge_release;
-        } else if( self->nudge < -nFloor ){
-            self->nudge += self->speeds.nudge_release;
+            if( self->nudge < nFloor ){ self->nudge = 0.0; }
         } else {
-            self->nudge = 0.0;
+            self->nudge += self->speeds.nudge_release;
+            if( self->nudge > -nFloor ){ self->nudge = 0.0; }
         }
+//        if( self->nudge > self->speeds.nudge_release ){
+//            self->nudge -= self->speeds.nudge_release;
+//        } else if( self->nudge < -self->speeds.nudge_release ){
+//            self->nudge += self->speeds.nudge_release;
+//        } else { self->nudge = 0.0; }
+//        // pedantically catch all near-zero states
+//        if( self->nudge < nFloor || self->nudge > -nFloor ){
+//            self->nudge = 0.0;
+//        }
     }
 }
 
