@@ -5,7 +5,8 @@
 
 #include "wrBufferInterface.h"
 
-static void delay_apply_rate( delay_t* self );
+static void apply_rate( delay_t* self );
+static float get_loop_samples( delay_t* self );
 
 //////////////////////////////////
 // setup
@@ -47,7 +48,7 @@ void delay_rate( delay_t* self, float rate )
 {
     self->play->transport->speeds.accel_standard = 0.001;
     self->rate = rate;
-    delay_apply_rate( self );
+    apply_rate( self );
 }
 
 void delay_rate_smoothed( delay_t* self, float rate )
@@ -55,26 +56,21 @@ void delay_rate_smoothed( delay_t* self, float rate )
     // FIXME add smoothing
     self->play->transport->speeds.accel_standard = 0.00005;
     self->rate = rate;
-    delay_apply_rate( self );
+    apply_rate( self );
 }
 
 #include <math.h>
 void delay_rate_v8( delay_t* self, float rate )
 {
     self->rate = exp2f( rate );
-    delay_apply_rate( self );
+    apply_rate( self );
 }
 
 void delay_rate_mod( delay_t* self, float mod )
 {
     // TODO use player_nudge to support mod natively
     self->mod = mod; // TODO bounds?
-    delay_apply_rate( self );
-}
-
-static void delay_apply_rate( delay_t* self )
-{
-    player_speed( self->play, self->rate + self->mod );
+    apply_rate( self );
 }
 
 // set buffer length at current rate, to match seconds
@@ -84,12 +80,11 @@ void delay_time( delay_t* self, float samples )
     float rate = delay_get_rate(self);
     float adjusted_s = samples * rate;
     if( adjusted_s < 0.0 ){
-        printf("delay_time negative. set to max\n");
         player_loop( self->play, false );
     } else if( adjusted_s == 0.0 ){
-        printf("TODO set loop so that freq(0) == C3\n");
+        printf("TODO set delay_time so that freq(0) == C3.\n");
     } else if( adjusted_s < 0.01 ){
-        printf("TODO check delay_time not too short\n");
+        printf("TODO ignore because delay_time <10ms.\n");
         //player_loop( self->play, true );
         //player_loop_start( self->play, start );
         //player_loop_end( self->play, start + bdiv );
@@ -100,7 +95,7 @@ void delay_time( delay_t* self, float samples )
         player_loop_end( self->play, adjusted_s );
         player_loop( self->play, true );
     } else {
-        while( adjusted_s >= self->play->tape_end ){
+        while( adjusted_s >= self->play->tape_end ){ // if too long, half sample rate
             rate *= 0.5;
             adjusted_s = samples * rate;
         }
@@ -110,7 +105,7 @@ void delay_time( delay_t* self, float samples )
             player_loop_end( self->play, adjusted_s );
             player_loop( self->play, true );
         } else {
-            printf("TODO what should the minimum speed be?\n");
+            printf("TODO ignoring delay_time as rate would be <(1/16).\n");
         }
     }
 }
@@ -131,11 +126,12 @@ void delay_length( delay_t* self, float fraction )
 {
     if( fraction >= 0.999 ){ // max time turns off looping
         player_loop( self->play, false );
+        return;
     } else { player_loop( self->play, true ); }
-    float bdiv = self->play->tape_end * fraction;
-    int whole_divs = (int)(player_get_goto( self->play ) / bdiv);
-    float start = (float)whole_divs * bdiv;
-
+// nb: using doubles for better timing accuracy
+    double bdiv = self->play->tape_end * fraction;
+    int whole_divs = (int)((double)player_get_goto( self->play ) / bdiv);
+    double start = (double)whole_divs * bdiv;
     player_loop_start( self->play, start );
     player_loop_end( self->play, start + bdiv );
 }
@@ -173,19 +169,12 @@ float delay_get_rate( delay_t* self )
 
 float delay_get_time( delay_t* self )
 {
-    float t = 0.0;
-    if( player_is_looping( self->play ) ){
-        // FIXME handle outside loops (ie end before start)
-        t = player_get_loop_end( self->play ) - player_get_loop_start( self->play );
-    } else {
-        t = self->play->tape_end;
-    }
-    return t / delay_get_rate( self );
+    return get_loop_samples(self) / delay_get_rate( self );
 }
 
 float delay_get_length( delay_t* self )
 {
-    return delay_get_time( self ) / self->play->tape_end;
+    return get_loop_samples(self) / self->play->tape_end;
 }
 
 float delay_get_feedback( delay_t* self )
@@ -220,4 +209,25 @@ float delay_step( delay_t* self, float in )
 float* delay_step_v( delay_t* self, float* io, int size )
 {
     return player_step_v( self->play, io, size );
+}
+
+
+//////////////////////////////////////
+// private definitions
+
+static void apply_rate( delay_t* self )
+{
+    player_speed( self->play, self->rate + self->mod );
+}
+
+static float get_loop_samples( delay_t* self )
+{
+    float t=0.0;
+    if( player_is_looping( self->play ) ){
+        // FIXME handle outside loops (ie end before start)
+        t = player_get_loop_end( self->play ) - player_get_loop_start( self->play );
+    } else {
+        t = self->play->tape_end;
+    }
+    return t;
 }

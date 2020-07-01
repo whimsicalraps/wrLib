@@ -198,11 +198,9 @@ float player_get_loop_end( player_t* self )
 // signals
 
 // this is an abstraction of a 'tape head'
-// TODO rename!
-#define LEAD_IN ((float)64.0)
+#define LEAD_IN ((float)64.0) // essentially an empty zone on either end of buffer
     // FIXME should be able to forgo LEAD_IN when looping whole buffer
     // in fact -- it shouldn't use 'goto' but just wrap the indices
-//#define LEAD_IN ((float)0.0)
 float player_step( player_t* self, float in )
 {
     if( !self->buf ){ return 0.0; } // no buffer available
