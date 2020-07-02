@@ -14,6 +14,7 @@
 // private declarations
 static float* push_input( ihead_t* self, float* buf, float in );
 static int write( ihead_t* self, float rate, float input );
+static void ihead_fade_slew_heads( ihead_fade_t* self );
 
 
 /////////////////////////////////
@@ -65,6 +66,13 @@ ihead_fade_t* ihead_fade_init( void )
     self->fade_phase = 0.0;
     self->fade_increment = 0.1;
     self->fade_countdown = 0;
+    self->rec_slew = lp1_init();
+    self->pre_slew = lp1_init();
+    lp1_set_coeff( self->rec_slew, 0.01 ); // TODO configure slew time
+    lp1_set_coeff( self->pre_slew, 0.01 ); // TODO configure slew time
+    lp1_set_out( self->pre_slew, 1.0 );
+    lp1_set_dest( self->pre_slew, 1.0 );
+    self->fade_recording_dest = false;
 
     return self;
 }
@@ -94,15 +102,37 @@ void ihead_jumpto( ihead_t* self, buffer_t* buf, int phase, bool is_forward ){
 
 // xfaded head
 void ihead_fade_recording( ihead_fade_t* self, bool is_recording ){
-    ihead_recording( self->head[0], is_recording );
-    ihead_recording( self->head[1], is_recording );
+    //printf("fade_recording\n");
+    if( is_recording != self->fade_recording_dest ){ // state change
+        self->fade_recording_dest = is_recording;
+        if( is_recording ){
+            ihead_recording( self->head[0], true );
+            ihead_recording( self->head[1], true );
+        } // else: record state flips upon convergence of filter slews
+        ihead_fade_slew_heads( self );
+    }
 }
 void ihead_fade_rec_level( ihead_fade_t* self, float level ){
     self->fade_rec_level = level;
+    ihead_fade_slew_heads( self );
 }
 void ihead_fade_pre_level( ihead_fade_t* self, float level ){
     self->fade_pre_level = level;
+    ihead_fade_slew_heads( self );
 }
+
+static void ihead_fade_slew_heads( ihead_fade_t* self )
+{
+    if( self->fade_recording_dest ){
+        lp1_set_dest( self->rec_slew, self->fade_rec_level );
+        lp1_set_dest( self->pre_slew, self->fade_pre_level );
+    } else { // recording switched off
+        lp1_set_dest( self->rec_slew, 0.0 );
+        lp1_set_dest( self->pre_slew, 1.0 );
+        // NOTE: ihead_recoding state will be flipped from step fn upon convergence
+    }
+}
+
 void ihead_fade_jumpto( ihead_fade_t* self, buffer_t* buf, int phase, bool is_forward ){
     self->fade_active_head ^= 1; // flip active head
     ihead_jumpto( self->head[self->fade_active_head], buf, phase, is_forward ); // jump the new head
@@ -172,28 +202,28 @@ void ihead_fade_poke( ihead_fade_t*  self
 {
     if( ihead_fade_is_recording( self ) ){ // skip poke if not recording
         ihead_t* hA = self->head[self->fade_active_head];
+        float r = lp1_get_out( self->rec_slew );
+        float p = lp1_get_out( self->pre_slew );
         if( self->fade_countdown > 0 ){
             ihead_t* hB = self->head[!self->fade_active_head];
             float mphase = 1.0 - self->fade_phase;
 
             // fade out
-            ihead_rec_level( hB, self->fade_rec_level
-                                 * rec_fade_LUT_get( mphase ) );
+            ihead_rec_level( hB, r * rec_fade_LUT_get( mphase ) );
             float lut = pre_fade_LUT_get(self->fade_phase);
-            float xf = 1.0 + lut*(self->fade_pre_level - 1.0);
+            float xf = 1.0 + lut*(p - 1.0);
             ihead_pre_level( hB, xf);
             ihead_poke( hB, buf, speed, input );
 
             // fade in
-            ihead_rec_level( hA, self->fade_rec_level
-                                 * rec_fade_LUT_get(self->fade_phase) );
+            ihead_rec_level( hA, r * rec_fade_LUT_get(self->fade_phase) );
             lut = pre_fade_LUT_get( mphase );
-            xf = 1.0 + lut*(self->fade_pre_level - 1.0);
+            xf = 1.0 + lut*(p - 1.0);
             ihead_pre_level( hA, xf);
             ihead_poke( hA, buf, speed, input );
         } else { // single head
-            ihead_rec_level( hA, self->fade_rec_level );
-            ihead_pre_level( hA, self->fade_pre_level );
+            ihead_rec_level( hA, r );
+            ihead_pre_level( hA, p );
             ihead_poke( hA, buf, speed, input );
         }
     }
@@ -201,6 +231,17 @@ void ihead_fade_poke( ihead_fade_t*  self
 
 float ihead_fade_update_phase( ihead_fade_t* self, float speed )
 {
+    // update slews for rec/pre heads
+    lp1_step_internal( self->rec_slew );
+    lp1_step_internal( self->pre_slew );
+    if( self->fade_recording_dest != ihead_fade_is_recording( self ) ){
+        if( lp1_converged( self->rec_slew ) ){
+            ihead_recording( self->head[0], false );
+            ihead_recording( self->head[1], false );
+        }
+    }
+
+    // update phase
     self->head[ self->fade_active_head ]->rphase += speed;
     if( self->fade_countdown > 0 ){ // 'inactive' head is still running
         self->fade_countdown--;

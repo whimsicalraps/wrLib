@@ -1,6 +1,7 @@
 #pragma once
 
 #include "wrBuffer.h"
+#include "wrFilter.h"
 
 #define OUT_BUF_LEN 64 // defines maximum speed
 
@@ -37,6 +38,9 @@ typedef struct{
     float    fade_phase;
     float    fade_increment; // 0-1 normalized per-sample
     int      fade_countdown;
+    filter_lp1_t* rec_slew;
+    filter_lp1_t* pre_slew;
+    bool     fade_recording_dest; // recording state destination
 } ihead_fade_t;
 
 
