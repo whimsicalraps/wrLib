@@ -240,8 +240,7 @@ float player_step( player_t* self, float in )
         }
     }
 
-    // head order TODO might need slew or transition handling
-    if( self->play_before_erase && ihead_fade_is_recording( self->head ) ){
+    if( !self->play_before_erase && ihead_fade_is_recording( self->head ) ){
         out *= ihead_fade_get_pre_level( self->head );
     }
     return out;
