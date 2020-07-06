@@ -1,5 +1,7 @@
 #include "wrMath.h"
 
+#include <math.h>
+
 // this function takes 0-1
 	// does a 1/x lookup with inverse
 	// particularly useful for ramp->tri->saw morphs
@@ -41,6 +43,14 @@ float wrap_f(float in, float min, float max) {
 	while(in>=max) { in -= diff; }
 
 	return in;
+}
+
+float dB_to_amp( float dB ){
+    return powf(10.0, dB/20.0);
+}
+
+float amp_to_dB( float amp ){
+    return 20.0 * log10f(amp);
 }
 
 /*float interp_lin_asm(float in1, float in2, float mix)
@@ -235,14 +245,14 @@ void mul_vf_vf(float* a, float* b, float* product, uint16_t size) {
 }
 
 // vector x constant multiply
-void mul_vf_f(float* a, float b, float* product, uint16_t size) {
-	float* a2=a;
-	float* product2=product; // point to start of arrays
-
-	for(uint16_t i=0; i<size; i++) {
-		*product2++ = (*a2++) * b;
-	}
+float* mul_vf_f(float* a, float b, int size){
+    float* a2=a;
+    for( int i=0; i<size; i++ ){
+        *a2++ *= b;
+    }
+    return a;
 }
+
 void muladd_vf_f_f(float* vin, float mul, float add, float* product, uint16_t size) {
 	float* vin2=vin;
 	float* product2=product; // point to start of arrays

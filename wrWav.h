@@ -48,7 +48,7 @@ typedef struct{
 } WavFile_t;
 
 WavFile_t* wav_load( FILE* file );
-float* wav_to_float( WavFile_t* src, int* count );
+float* wav_malloc_float( WavFile_t* src, int* count );
 void wav_save_as( FILE* dest, WavFile_t* src );
 WavFile_t* wav_new( uint16_t channels
                   , uint32_t samplerate
