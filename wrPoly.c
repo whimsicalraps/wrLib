@@ -31,21 +31,20 @@ poly_alloc_t* poly_init( uint8_t voice_count )
     self->busy_list   = malloc(sizeof(uint8_t) * voice_count);
     if( !self->busy_list ){ printf("poly !self->busy_list\n"); return NULL; }
 
-    self->free_count  = voice_count;
-    self->free_first  = 0;
-    self->free_queue  = malloc(sizeof(uint8_t) * voice_count);
-    if( !self->free_queue ){ printf("poly !self->free_queue\n"); return NULL; }
+    self->free_count = voice_count;
+    self->free_list  = malloc(sizeof(uint8_t) * voice_count);
+    if( !self->free_list ){ printf("poly !self->free_list\n"); return NULL; }
     for( uint8_t i=0; i<voice_count; i++ ){
         self->notes[i]      = RESERVED_PITCH;
         self->busy_list[i]  = 255;
-        self->free_queue[i] = 255;
+        self->free_list[i] = i;
     }
     return self;
 }
 
 void poly_deinit( poly_alloc_t* self )
 {
-    free(self->free_queue); self->free_queue = NULL;
+    free(self->free_list); self->free_list = NULL;
     free(self->busy_list); self->busy_list = NULL;
     free(self->notes); self->notes = NULL;
     free(self); self = NULL;
@@ -101,26 +100,29 @@ static void release( poly_alloc_t* self
         self->busy_list[i] = self->busy_list[i+1];
     }
 
-    // enqueue note into free queue
-    // add check for full-queue (shouldn't happen)
-    uint8_t ix = (self->free_first + self->free_count++) % self->voice_count;
-    self->free_queue[ix] = voice;
+    // TODO this is same as middle of assign/steal. abstract and pass list?
+    // add to end of free list
+    self->free_list[self->free_count] = voice;
+    self->free_count++;
 }
 
+// TODO refactor as the only difference bw assign & steal is which sorted-list
+    // is the voice taken from. just pass the list as an object to a single fn
 static int8_t assign( poly_alloc_t* self
                     , int16_t       note
                     )
 {
-    int8_t voice;
-
-    // dequeue voice from free
-    voice = self->free_first++;
-    if(self->free_first >= self->voice_count){
-        self->free_first = 0;
-    }
+    int8_t voice = self->free_list[0]; // steal front of the free list
     self->free_count--;
 
-    self->busy_list[self->busy_count++] = voice; // add busy voice to end of list
+    // shift free list forward
+    for( uint8_t i=0; i < self->free_count; i++ ){
+        self->free_list[i] = self->free_list[i+1];
+    }
+
+    // add to end of busy list
+    self->busy_list[self->busy_count] = voice;
+    self->busy_count++;
 
     self->notes[voice] = note; // save pitch
 
@@ -132,13 +134,16 @@ static int8_t steal( poly_alloc_t* self
                    )
 {
     int8_t voice = self->busy_list[0]; // steal front of busy list (oldest)
+    self->busy_count--;
 
-    // shift list forward
-        // want to do a queue, but it varies in length?
-    for( uint8_t i=0; i < (self->voice_count-1); i++ ){
+    // shift busy list forward
+    for( uint8_t i=0; i < self->busy_count; i++ ){
         self->busy_list[i] = self->busy_list[i+1];
     }
-    self->busy_list[self->voice_count-1] = voice;
+
+    // add to end of busy list
+    self->busy_list[self->busy_count] = voice;
+    self->busy_count++;
 
     self->notes[voice] = note; // save pitch
 

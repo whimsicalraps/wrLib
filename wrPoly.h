@@ -16,15 +16,15 @@
  */
 
 typedef struct poly_alloc{
-	uint8_t  voice_count;
+    uint8_t  voice_count;
 
-	int16_t* notes;
-	uint8_t  busy_count;
-	uint8_t* busy_list;
-	
-	uint8_t  free_count;
-	int16_t  free_first;
-	uint8_t* free_queue;
+    int16_t* notes;
+
+    uint8_t  busy_count;
+    uint8_t* busy_list;
+
+    uint8_t  free_count;
+    uint8_t* free_list;
 } poly_alloc_t;
 
 poly_alloc_t* poly_init( uint8_t voice_count );
