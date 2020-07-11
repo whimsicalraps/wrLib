@@ -39,7 +39,8 @@ ihead_t* ihead_init( void )
     ihead_pre_level( self, 0.0 );
 
 // READ HEAD
-    self->rphase = self->write_ix - REC_OFFSET;
+    self->rphase.i = self->write_ix - REC_OFFSET;
+    self->rphase.f = 0.0;
 
     return self;
 }
@@ -97,7 +98,8 @@ void ihead_pre_level( ihead_t* self, float level ){
 }
 void ihead_jumpto( ihead_t* self, buffer_t* buf, int phase, bool is_forward ){
     self->write_ix = (is_forward) ? phase + REC_OFFSET : phase - REC_OFFSET;
-    self->rphase   = (float)phase;
+    self->rphase.i = phase;
+    self->rphase.f = 0.0;
 }
 
 // xfaded head
@@ -135,7 +137,7 @@ static void ihead_fade_slew_heads( ihead_fade_t* self )
 
 void ihead_fade_jumpto( ihead_fade_t* self, buffer_t* buf, int phase, bool is_forward ){
     self->fade_active_head ^= 1; // flip active head
-    ihead_jumpto( self->head[self->fade_active_head], buf, phase, is_forward ); // jump the new head
+    ihead_jumpto( self->head[self->fade_active_head], buf, phase, is_forward );
     // initiate the xfade
     self->fade_phase = 0.0;
     float count = self->fade_length * 48000.0; // FIXME assume 48kHz samplerate
@@ -149,13 +151,13 @@ void ihead_fade_jumpto( ihead_fade_t* self, buffer_t* buf, int phase, bool is_fo
 bool ihead_is_recording( ihead_t* self ){ return self->recording; }
 float ihead_get_rec_level( ihead_t* self ){ return self->rec_level; }
 float ihead_get_pre_level( ihead_t* self ){ return self->pre_level; }
-int ihead_get_location( ihead_t* self ){ return (int)self->rphase; }
+int ihead_get_location( ihead_t* self ){ return self->rphase.i; }
 
 bool  ihead_fade_is_recording(  ihead_fade_t* self ){ return self->head[0]->recording; }
 float ihead_fade_get_rec_level( ihead_fade_t* self ){ return self->fade_rec_level; }
 float ihead_fade_get_pre_level( ihead_fade_t* self ){ return self->fade_pre_level; }
 int   ihead_fade_get_location(  ihead_fade_t* self ){
-    return (int)self->head[self->fade_active_head]->rphase;
+    return self->head[self->fade_active_head]->rphase.i;
 }
 
 ///////////////////////////////////////
@@ -174,18 +176,13 @@ void ihead_poke( ihead_t*  self
     int nframes_dir = (speed >= 0.0) ? nframes : -nframes;
     if( self->recording ){
         float* y = self->out_buf; // y is the data to be written to the buffer_t
-        //float* sampsP[nframes];
-        //buffer_points( buf, sampsP, self->write_ix, nframes_dir );
-        //for( int i=0; i<nframes; i++ ){
-        //    *sampsP[i] *= self->pre_level; // erase head
-        //    *sampsP[i] += *y++;            // record head
-        //}
       // NOTE: using less efficient peek & poke to allow:
                 // 1. easier to handle type conversion at a lower level
                 // 2. easier to infer if a section of buffer needs to be rewritten
         float samps[nframes];
         buffer_peek_v( buf, samps, self->write_ix, nframes_dir );
         for( int i=0; i<nframes; i++ ){
+// FIXME put the feedback filter here. just use lp1 for simplicity
             samps[i] *= self->pre_level; // erase head
             samps[i] += *y++;            // record head
         }
@@ -229,7 +226,7 @@ void ihead_fade_poke( ihead_fade_t*  self
     }
 }
 
-float ihead_fade_update_phase( ihead_fade_t* self, float speed )
+int ihead_fade_update_phase( ihead_fade_t* self, float speed )
 {
     // update slews for rec/pre heads
     lp1_step_internal( self->rec_slew );
@@ -241,24 +238,30 @@ float ihead_fade_update_phase( ihead_fade_t* self, float speed )
         }
     }
 
-    // update phase
-    self->head[ self->fade_active_head ]->rphase += speed;
-    if( self->fade_countdown > 0 ){ // 'inactive' head is still running
-        self->fade_countdown--;
-        self->head[!self->fade_active_head ]->rphase += speed;
+    { // update phase (active head)
+        phase_t* p = &(self->head[ self->fade_active_head ]->rphase);
+        p->f += speed;
+        while( p->f >= 1.0 ){ p->i++; p->f -= 1.0; }
+        while( p->f <  0.0 ){ p->i--; p->f += 1.0; }
     }
-    return self->head[ self->fade_active_head ]->rphase;
+
+    if( self->fade_countdown > 0 ){ // update phase (inactive head)
+        self->fade_countdown--;
+        phase_t* p = &(self->head[!self->fade_active_head ]->rphase);
+        p->f += speed;
+        while( p->f >= 1.0 ){ p->i++; p->f -= 1.0; }
+        while( p->f <  0.0 ){ p->i--; p->f += 1.0; }
+    }
+
+    return self->head[ self->fade_active_head ]->rphase.i;
 }
 
+// interpolate into the array of float*s
 float ihead_peek( ihead_t* self, buffer_t* buf )
 {
-    int p0 = (int)self->rphase; // nearest integer sample
-    float coeff = self->rphase - (float)p0; // interpolation coefficient [0,1)
-
-    // interpolate into the array of float*s
     float samps[4];
-    buffer_peek_v( buf, samps, p0-1, 4 );
-    return interp_hermite_4pt( coeff, &samps[1] );
+    buffer_peek_v( buf, samps, (self->rphase.i)-1, 4 );
+    return interp_hermite_4pt( self->rphase.f, &samps[1] );
 }
 
 float ihead_fade_peek( ihead_fade_t* self, buffer_t* buf )

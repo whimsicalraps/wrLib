@@ -6,6 +6,11 @@
 #define OUT_BUF_LEN 64 // defines maximum speed
 
 typedef struct{
+    int   i;
+    float f;
+} phase_t;
+
+typedef struct{
     // WRITE / ERASE HEAD
     float in_buf[4];
     int   in_buf_ix; // 'phase' but always advances by 1
@@ -15,15 +20,13 @@ typedef struct{
 
     int write_ix; // pointer into the destination buffer
 
-    float phase;
-
     bool  recording;
 
     float rec_level;
     float pre_level;
 
     // READ HEAD
-    float rphase;
+    phase_t rphase;
 } ihead_t;
 
 typedef struct{
@@ -93,4 +96,4 @@ void ihead_fade_poke( ihead_fade_t*  self
 float ihead_peek( ihead_t* self, buffer_t* buf );
 float ihead_fade_peek( ihead_fade_t* self, buffer_t* buf );
 
-float ihead_fade_update_phase( ihead_fade_t* self, float speed );
+int ihead_fade_update_phase( ihead_fade_t* self, float speed );

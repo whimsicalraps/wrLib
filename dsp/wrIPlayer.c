@@ -7,7 +7,7 @@
 ///////////////////////////////
 // private declarations
 
-static float tape_clamp( player_t* self, float location );
+static int tape_clamp( player_t* self, int location );
 static bool player_is_going( player_t* self );
 static void queue_goto( player_t* self, int sample );
 static int get_queued_goto( player_t* self );
@@ -56,7 +56,7 @@ player_t* player_load( player_t* self, buffer_t* buffer )
     if(self->buf){
         self->tape_end = buffer->len;
         player_goto( self, 0 );
-        player_loop_start( self, 0.0 );
+        player_loop_start( self, 0 );
         player_loop_end( self, self->tape_end );
     }
     return self;
@@ -111,10 +111,10 @@ void player_head_order( player_t* self, bool play_before_erase ){
 void player_loop( player_t* self, bool is_looping ){
     self->loop = is_looping;
 }
-void player_loop_start( player_t* self, float location ){
+void player_loop_start( player_t* self, int location ){
     self->loop_start = tape_clamp( self, location );
 }
-void player_loop_end( player_t* self, float location ){
+void player_loop_end( player_t* self, int location ){
     self->loop_end = tape_clamp( self, location );
 }
 
@@ -124,8 +124,8 @@ void player_loop_end( player_t* self, float location ){
 
 bool player_is_playing( player_t* self ){
     return transport_is_active( self->transport ); }
-float player_get_goto( player_t* self ){
-    return (float)ihead_fade_get_location( self->head ); }
+int player_get_goto( player_t* self ){
+    return ihead_fade_get_location( self->head ); }
 float player_get_speed( player_t* self ){
     return transport_get_speed( self->transport ); }
 float player_get_speed_offset( player_t* self ){
@@ -140,15 +140,15 @@ float player_get_pre_level( player_t* self ){
     return ihead_fade_get_pre_level( self->head ); }
 bool player_is_head_order( player_t* self ){ return self->play_before_erase; }
 bool player_is_looping( player_t* self ){ return self->loop; }
-float player_get_loop_start( player_t* self ){ return self->loop_start; }
-float player_get_loop_end( player_t* self ){ return self->loop_end; }
+int player_get_loop_start( player_t* self ){ return self->loop_start; }
+int player_get_loop_end( player_t* self ){ return self->loop_end; }
 
 
 /////////////////////////////////////
 // signals
 
 // this is an abstraction of a 'tape head'
-#define LEAD_IN ((float)64.0) // essentially an empty zone on either end of buffer
+#define LEAD_IN (64) // essentially an empty zone on either end of buffer
     // FIXME should be able to forgo LEAD_IN when looping whole buffer
     // in fact -- it shouldn't use 'goto' but just wrap the indices
 float player_step( player_t* self, float in )
@@ -173,10 +173,10 @@ float player_step( player_t* self, float in )
                    , motion
                    , in
                    );
-    float new_phase = ihead_fade_update_phase( self->head, motion );
+    int new_phase = ihead_fade_update_phase( self->head, motion );
 
     if( !player_is_going( self ) ){ // only edge check if there isn't a queued jump
-        float jumpto = -1.0;
+        int jumpto = -1;
         if( self->loop ){ // apply loop brace
             if( new_phase >= self->loop_end ){ jumpto = self->loop_start; }
             else if( new_phase <  self->loop_start ){ jumpto = self->loop_end; }
@@ -185,7 +185,7 @@ float player_step( player_t* self, float in )
             if( new_phase >= (self->tape_end - LEAD_IN) ){ jumpto = LEAD_IN; }
             else if( new_phase < LEAD_IN ){ jumpto = self->tape_end - LEAD_IN; }
         }
-        if( jumpto >= 0.0 ){ // if there's a new jump, request it
+        if( jumpto >= 0 ){ // if there's a new jump, request it
             player_goto( self, jumpto );
         }
     }
@@ -210,7 +210,7 @@ float* player_step_v( player_t* self, float* io, int size )
 //////////////////////////////////
 // private funcs
 
-static float tape_clamp( player_t* self, float location ){
+static int tape_clamp( player_t* self, int location ){
     if( location < LEAD_IN ){ location = LEAD_IN; }
     if( location > (self->tape_end - LEAD_IN) ){ location = self->tape_end - LEAD_IN; }
     return location;
