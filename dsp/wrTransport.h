@@ -2,6 +2,7 @@
 
 #include <stdbool.h>
 #include "wrFilter.h" // filter_lp1_t
+#include "wrSlope.h" // slope_t
 
 typedef enum{ transport_motor_standard
             , transport_motor_quick
@@ -17,16 +18,24 @@ typedef struct{
     float nudge_release;
 } std_speeds_t;
 
+typedef enum{ Transport_Nudge_Rewind      = -2
+            , Transport_Nudge_Pull        = -1
+            , Transport_Nudge_None        = 0
+            , Transport_Nudge_Push        = 1
+            , Transport_Nudge_FastForward = 2
+} Transport_Nudge_t;
+
 typedef struct{
     std_speeds_t speeds;
 
     bool          active;
 
     filter_lp1_t* speed_slew; // smoothing for speed changes
-    float         speed_active;
-    float         speed_inactive;
+    float         speed;
+    float         offset; // operates regardless of active state
 
-    float         nudge;      // how much are we currently nudging?
+    slope_t*          nudge_slope;
+    Transport_Nudge_t nudge;
 } transport_t;
 
 
@@ -40,17 +49,16 @@ void transport_deinit( transport_t* self );
 ////////////////////////////////
 // setters
 
+void transport_change_std_speeds( transport_t* self
+                                , std_speeds_t speeds
+                                );
 void transport_active( transport_t*            self
                      , bool                    active
                      , transport_motor_speed_t slew
                      );
-void transport_change_std_speeds( transport_t* self
-                                , std_speeds_t speeds
-                                );
-void transport_speed_active( transport_t* self, float speed );
-void transport_speed_inactive( transport_t* self, float speed );
-void transport_nudge( transport_t* self, float delta );
-void transport_unnudge( transport_t* self );
+void transport_speed( transport_t* self, float speed );
+void transport_offset( transport_t* self, float offset );
+void transport_nudge( transport_t* self, Transport_Nudge_t n );
 
 
 /////////////////////////////////
@@ -58,6 +66,8 @@ void transport_unnudge( transport_t* self );
 
 bool transport_is_active( transport_t* self );
 float transport_get_speed( transport_t* self );
+float transport_get_offset( transport_t* self );
+float transport_get_speed_live( transport_t* self );
 
 
 /////////////////////////////////

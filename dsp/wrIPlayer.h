@@ -9,9 +9,6 @@ typedef struct{
     ihead_fade_t* head;
     transport_t*  transport;
 
-    bool  playing; // transport state
-    float speed; // transport speed
-    float motion; // slewed version of speed
     float tape_end;
     bool  loop;
     float loop_start;
@@ -33,7 +30,8 @@ player_t* player_load( player_t* self, buffer_t* buffer );
 void player_playing( player_t* self, bool is_play );
 void player_goto( player_t* self, int sample );
 void player_speed( player_t* self, float speed );
-void player_nudge( player_t* self, float amount );
+void player_speed_offset( player_t* self, float speed );
+void player_nudge( player_t* self, int amount );
 void player_recording( player_t* self, bool is_record );
 void player_rec_level( player_t* self, float rec_level );
 void player_pre_level( player_t* self, float pre_level );
@@ -46,6 +44,7 @@ void player_loop_end( player_t* self, float location );
 bool player_is_playing( player_t* self );
 float player_get_goto( player_t* self );
 float player_get_speed( player_t* self );
+float player_get_speed_offset( player_t* self );
 float player_get_speed_live( player_t* self );
 bool player_is_recording( player_t* self );
 float player_get_rec_level( player_t* self );
