@@ -179,18 +179,29 @@ float* ihead_fade_peek_v( ihead_fade_t* self, float*    io
                                             , float*    motion
                                             , int       size )
 {
-    if( self->fade_countdown > 0 ){ // in xfade. just do per sample for now
+    if( self->fade_countdown >= size ){ // not end of xfade, assume countdown > 0
+        ihead_t* h_out = self->head[!self->fade_active_head ];
+        ihead_t* h_in  = self->head[ self->fade_active_head ];
+
+        float fadeout[size];
+        float fadein[size]; // TODO can save this buf by using the io array as tmp
+        ihead_peek_v( h_out, fadeout, buf, motion, size );
+        ihead_peek_v( h_in, fadein, buf, motion, size );
+
         for( int i=0; i<size; i++ ){
-            io[i] = ihead_fade_peek( self, buf );
-            update_peek_phase( self, motion[i] );
+            self->fade_phase += self->fade_increment; // move through xfade
+            io[i]  = fadeout[i] * equal_power_LUT_get(1.0 - self->fade_phase);
+            io[i] += fadein[i] * equal_power_LUT_get(self->fade_phase);
         }
+        self->fade_countdown -= size;
+    } else if( self->fade_countdown > 0 ){ // half & half. split & recurse
+        int fade_count = self->fade_countdown; // save a copy (it will change)
+        ihead_fade_peek_v( self, io, buf, motion, self->fade_countdown );
+        ihead_fade_peek_v( self, &io[fade_count], buf
+                         , &motion[fade_count], size - fade_count );
     } else {
         ihead_t* h = self->head[ self->fade_active_head ];
         ihead_peek_v( h, io, buf, motion, size );
-        //for( int i=0; i<size; i++ ){ // WIP unrolling through fade
-        //    io[i] = ihead_peek( h, buf );
-        //    update_peek_phase2( self, motion[i] );
-        //}
     }
     return io;
 }
