@@ -7,6 +7,11 @@
 
 static void apply_rate( delay_t* self );
 static float get_loop_samples( delay_t* self );
+void mac_v( buffer_interface_t* self, float* io
+                                    , int origin
+                                    , int count
+                                    , float coeff);
+
 
 //////////////////////////////////
 // setup
@@ -17,8 +22,12 @@ delay_t* delay_init( int samples )
     if( !self ){ printf("couldn't malloc delay_t.\n"); return NULL; }
 
     // objects
-    self->buf = buffer_init( sizeof(float), samples, buffer_interface_init() );
+    buffer_interface_t* bi = buffer_interface_init(); // generic buffer i.f
+    bi->mac_v = &mac_v; // overload with our LPfiltering mac function
+    bi->userdata = (void*)self; // give mac_v access to this object
+    self->buf = buffer_init( sizeof(float), samples, bi );
     self->play = player_init( self->buf );
+    self->lpf = 0.0;
 
     delay_subloop( self, true ); // FIXME should be false
     player_playing( self->play, true );
@@ -161,6 +170,11 @@ void delay_freeze( delay_t* self, bool is_freeze )
     player_recording( self->play, !is_freeze );
 }
 
+void delay_lowpass( delay_t* self, float coeff )
+{
+    self->lpf = (coeff < 0.0) ? 0.0 : (coeff > 1.0) ? coeff = 1.0 : coeff;
+}
+
 // getters
 float delay_get_rate( delay_t* self )
 {
@@ -195,6 +209,11 @@ bool delay_is_freeze( delay_t* self )
 float delay_get_cut( delay_t* self )
 {
     return player_get_goto( self->play );
+}
+
+float delay_get_lowpass( delay_t* self )
+{
+    return self->lpf;
 }
 
 
@@ -241,4 +260,29 @@ static float get_loop_samples( delay_t* self )
         t = self->play->tape_end;
     }
     return t;
+}
+
+void mac_v( buffer_interface_t* self, float* io
+                                    , int    origin
+                                    , int    count
+                                    , float  coeff )
+{
+    static float LAST_SAMP = 0.0;
+    delay_t* d = (delay_t*)self->userdata;
+    float* s = io;
+    int dir = (count>=0) ? 1 : -1;
+    int abscount = (count>=0) ? count : -count;
+    float* buffer = (float*)self->buf->b;
+    for( int i=0; i<abscount; i++ ){
+        // skipping bounds checks, instead relying on wrIPlayer's LEAD_IN protection
+        float bs = buffer[origin];
+
+    // lp1. but this does weird things with the xfade :/ sounds ok though!?
+        LAST_SAMP  = LAST_SAMP + d->lpf * (bs - LAST_SAMP);
+        LAST_SAMP *= coeff; // feedback level
+
+
+        buffer[origin] = *s++ + LAST_SAMP;
+        origin += dir;
+    }
 }

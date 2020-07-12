@@ -8,6 +8,7 @@ typedef struct{
     player_t* play;
     float     rate; // base rate, to apply modulation on top of
     float     mod; // rate modulation amount
+    float     lpf;
 } delay_t;
 
 delay_t* delay_init( int samples );
@@ -23,6 +24,7 @@ void delay_length( delay_t* self, float fraction ); // set subloop to a fraction
 void delay_subloop( delay_t* self, bool is_subloop ); // activates the subloop
 void delay_loop_to_here( delay_t* self, float length ); // set current playhead as loop end, and loop the previous length of samples
 void delay_freeze( delay_t* self, bool is_freeze ); // disable recording & erase
+void delay_lowpass( delay_t* self, float coeff );
 
 float delay_get_rate( delay_t* self ); // (delay SR / playback SR)
 float delay_get_time( delay_t* self ); // time, adjusted for rate, in samples
@@ -31,6 +33,7 @@ float delay_get_length( delay_t* self ); // portion of buffer currently active (
 bool delay_is_subloop( delay_t* self ); // playback is restricted to a sub-loop
 bool delay_is_freeze( delay_t* self ); // recording (and erase) is disabled
 float delay_get_cut( delay_t* self ); // current playhead location in samples
+float delay_get_lowpass( delay_t* self );
 
 float delay_step( delay_t* self, float in );
 float* delay_step_v( delay_t* self, float* io, int size );
