@@ -168,13 +168,13 @@ float player_step( player_t* self, float in )
         player_goto( self, player_get_goto(self) ); // reset head offset
     }
 
-    float out = ihead_fade_peek( self->head, self->buf );
+    float out = ihead_fade_peek( self->head, self->buf, motion );
     ihead_fade_poke( self->head
                    , self->buf
                    , motion
                    , in
                    );
-    int new_phase = ihead_fade_update_phase( self->head, motion );
+    int new_phase = ihead_fade_get_location( self->head );
 
     if( !player_is_going( self ) ){ // only edge check if there isn't a queued jump
         int jumpto = -1;
@@ -227,7 +227,7 @@ float* player_step_v( player_t* self, float* io, int size )
     }
 
     if( !player_is_going( self ) ){ // only edge check if there isn't a queued jump
-        int new_phase = ihead_fade_get_phase( self->head );
+        int new_phase = ihead_fade_get_location( self->head );
         int jumpto = -1;
         if( self->loop ){ // apply loop brace
             if( new_phase >= self->loop_end ){ jumpto = self->loop_start; }

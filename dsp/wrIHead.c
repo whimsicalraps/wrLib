@@ -100,11 +100,19 @@ void ihead_poke( ihead_t*  self
     self->write_ix += nframes_dir;
 }
 
-float ihead_peek( ihead_t* self, buffer_t* buf )
+float ihead_peek( ihead_t* self, buffer_t* buf, float speed )
 {
     float samps[4];
     buffer_peek_v( buf, samps, (self->rphase.i)-1, 4 );
-    return interp_hermite_4pt( self->rphase.f, &samps[1] );
+    float out = interp_hermite_4pt( self->rphase.f, &samps[1] );
+
+    // update phase
+    phase_t* p = &(self->rphase);
+    p->f += speed;
+    while( p->f >= 1.0 ){ p->i++; p->f -= 1.0; }
+    while( p->f <  0.0 ){ p->i--; p->f += 1.0; }
+
+    return out;
 }
 
 float* ihead_peek_v( ihead_t* self, float* io, buffer_t* buf, float* motion, int size )
@@ -115,7 +123,7 @@ float* ihead_peek_v( ihead_t* self, float* io, buffer_t* buf, float* motion, int
     phase_t* p = &(self->rphase);
     int pi_max = p->i;
     int pi_min = p->i;
-    for( int i=0; i<size; i++ ){ // WIP unrolling
+    for( int i=0; i<size; i++ ){
         pf[i] = p->f;
         pi[i] = p->i;
 
@@ -143,13 +151,6 @@ float* ihead_peek_v( ihead_t* self, float* io, buffer_t* buf, float* motion, int
     return io;
 }
 
-void ihead_update_peek_phase( ihead_t* self, float speed )
-{
-    phase_t* p = &(self->rphase);
-    p->f += speed;
-    while( p->f >= 1.0 ){ p->i++; p->f -= 1.0; }
-    while( p->f <  0.0 ){ p->i--; p->f += 1.0; }
-}
 
 //////////////////////////////
 // private funcs

@@ -59,12 +59,9 @@ void ihead_fade_poke_v( ihead_fade_t*  self
                       );
 
 // READ HEAD
-float ihead_fade_peek( ihead_fade_t* self, buffer_t* buf );
+float ihead_fade_peek( ihead_fade_t* self, buffer_t* buf, float speed );
 float* ihead_fade_peek_v( ihead_fade_t* self
                         , float*        io
                         , buffer_t*     buf
                         , float*        motion
                         , int           size );
-
-int ihead_fade_update_phase( ihead_fade_t* self, float speed ); // for single samp
-int ihead_fade_get_phase( ihead_fade_t* self ); // for block samp

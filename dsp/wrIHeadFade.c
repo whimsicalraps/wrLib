@@ -13,7 +13,6 @@
 
 static void ihead_fade_slew_heads( ihead_fade_t* self );
 static void update_poke_slews( ihead_fade_t* self );
-static void update_peek_phase( ihead_fade_t* self, float speed );
 
 
 ///////////////////////////////
@@ -93,17 +92,17 @@ void ihead_fade_jumpto( ihead_fade_t* self, buffer_t* buf, int phase, bool is_fo
 //////////////////////////////////
 // params: getters
 
+int ihead_fade_get_location( ihead_fade_t* self ){
+    return ihead_get_location( self->head[self->fade_active_head] );
+}
 bool ihead_fade_is_recording( ihead_fade_t* self ){
-    return ihead_is_recording( self->head[0] );
+    return ihead_is_recording( self->head[0] ); // both are the same
 }
 float ihead_fade_get_rec_level( ihead_fade_t* self ){
     return self->fade_rec_level;
 }
 float ihead_fade_get_pre_level( ihead_fade_t* self ){
     return self->fade_pre_level;
-}
-int ihead_fade_get_location( ihead_fade_t* self ){
-    return ihead_get_location( self->head[self->fade_active_head] );
 }
 
 
@@ -143,31 +142,28 @@ void ihead_fade_poke( ihead_fade_t*  self
             ihead_poke( hA, buf, speed, input );
         }
     }
-}
-
-int ihead_fade_update_phase( ihead_fade_t* self, float speed )
-{
     update_poke_slews( self );
-    update_peek_phase( self, speed );
-    return ihead_fade_get_phase( self );
 }
 
-int ihead_fade_get_phase( ihead_fade_t* self )
-{
-    return self->head[ self->fade_active_head ]->rphase.i;
-}
-
-float ihead_fade_peek( ihead_fade_t* self, buffer_t* buf )
+float ihead_fade_peek( ihead_fade_t* self, buffer_t* buf, float speed )
 {
     float o;
     if( self->fade_countdown > 0 ){
-        float out = ihead_peek( self->head[ !self->fade_active_head ], buf );
-        float in  = ihead_peek( self->head[  self->fade_active_head ], buf );
+        ihead_t* h_out = self->head[!self->fade_active_head ];
+        ihead_t* h_in  = self->head[ self->fade_active_head ];
+
+        float out = ihead_peek( h_out, buf, speed );
+        float in  = ihead_peek( h_in, buf, speed );
+
         self->fade_phase += self->fade_increment; // move through xfade
         o  = out * equal_power_LUT_get(1.0 - self->fade_phase);
         o += in * equal_power_LUT_get(self->fade_phase);
+
+        self->fade_countdown--;
+
     } else { // single head
-        o = ihead_peek( self->head[ self->fade_active_head ], buf );
+        ihead_t* h = self->head[ self->fade_active_head ];
+        o = ihead_peek( h, buf, speed );
     }
     return o;
 }
@@ -215,7 +211,6 @@ void ihead_fade_poke_v( ihead_fade_t*  self, buffer_t* buf
                        , motion[i]
                        , io[i]
                        );
-        update_poke_slews( self );
     }
 }
 
@@ -245,14 +240,5 @@ static void update_poke_slews( ihead_fade_t* self )
             ihead_recording( self->head[0], false );
             ihead_recording( self->head[1], false );
         }
-    }
-}
-
-static void update_peek_phase( ihead_fade_t* self, float speed )
-{
-    ihead_update_peek_phase( self->head[ self->fade_active_head ], speed );
-    if( self->fade_countdown > 0 ){ // update phase (inactive head)
-        self->fade_countdown--;
-        ihead_update_peek_phase( self->head[!self->fade_active_head ], speed );
     }
 }

@@ -56,6 +56,5 @@ void ihead_poke( ihead_t*  self
                , float     speed
                , float     input );
 // READ HEAD
-float ihead_peek( ihead_t* self, buffer_t* buf );
+float ihead_peek( ihead_t* self, buffer_t* buf, float speed );
 float* ihead_peek_v( ihead_t* self, float* io, buffer_t* buf, float* motion, int size );
-void ihead_update_peek_phase( ihead_t* self, float speed );
