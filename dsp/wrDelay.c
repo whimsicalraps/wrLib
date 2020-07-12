@@ -208,7 +208,13 @@ float delay_step( delay_t* self, float in )
 
 float* delay_step_v( delay_t* self, float* io, int size )
 {
-    return player_step_v( self->play, io, size );
+    // using single-sample version to force sample accuracy
+    float* b = io;
+    for( int i=0; i<size; i++ ){
+        *b = player_step( self->play, *b );
+        b++;
+    }
+    return io;
 }
 
 

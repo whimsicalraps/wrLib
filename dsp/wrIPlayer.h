@@ -1,7 +1,7 @@
 #pragma once
 
 #include "wrBuffer.h"
-#include "wrIHead.h"
+#include "wrIHeadFade.h"
 #include "wrTransport.h"
 
 typedef struct{

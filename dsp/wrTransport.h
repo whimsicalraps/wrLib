@@ -74,7 +74,7 @@ float transport_get_speed_live( transport_t* self );
 // signal
 
 float transport_speed_step( transport_t* self );
-float* transport_speed_block( transport_t* self
-                            , float* buffer
-                            , int b_size
-                            );
+float* transport_speed_v( transport_t* self
+                        , float* buffer
+                        , int b_size
+                        );

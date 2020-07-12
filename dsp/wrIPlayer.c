@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "wrBlocks.h"
 
 ///////////////////////////////
 // private declarations
@@ -198,10 +199,52 @@ float player_step( player_t* self, float in )
 
 float* player_step_v( player_t* self, float* io, int size )
 {
-    float* b = io;
-    for( int i=0; i<size; i++ ){
-        *b = player_step( self, *b );
-        b++;
+    if( !self->buf ){ return b_cp( io, 0.0, size ); } // no buffer available
+
+    int goto_dest = get_queued_goto( self );
+    if( goto_dest != -1 ){ // check if a queued goto is ready
+        //printf("try queued\n");
+        player_goto( self, goto_dest );
+    }
+
+    { // motion[], outie[]
+        bool last_dir = (transport_get_speed_live( self->transport ) >= 0);
+        float motion[size];
+        transport_speed_v( self->transport, motion, size );
+        if( last_dir != (motion[size-1] >= 0) ){ // speed sign change this block
+            player_goto( self, player_get_goto(self) ); // use the newest speed samp
+            // FIXME will this cause it to jump by block_size samples?
+        }
+
+        float outie[size];
+        ihead_fade_peek_v( self->head, outie, self->buf, motion, size );
+        ihead_fade_poke_v( self->head
+                         , self->buf
+                         , motion
+                         , io
+                         , size );
+        b_cp_v( io, outie, size );
+    }
+
+    if( !player_is_going( self ) ){ // only edge check if there isn't a queued jump
+        int new_phase = ihead_fade_get_phase( self->head );
+        int jumpto = -1;
+        if( self->loop ){ // apply loop brace
+            if( new_phase >= self->loop_end ){ jumpto = self->loop_start; }
+            else if( new_phase <  self->loop_start ){ jumpto = self->loop_end; }
+        } else { // no loop brace, so just loop the whole buffer
+            if( new_phase >= (self->tape_end - LEAD_IN) ){ jumpto = LEAD_IN; }
+            else if( new_phase < LEAD_IN ){ jumpto = self->tape_end - LEAD_IN; }
+        }
+        if( jumpto >= 0 ){ // if there's a new jump, request it
+            player_goto( self, jumpto );
+        }
+    }
+
+    if( !self->play_before_erase && ihead_fade_is_recording( self->head ) ){
+        b_mul( io
+             , ihead_fade_get_pre_level( self->head )
+             , size );
     }
     return io;
 }

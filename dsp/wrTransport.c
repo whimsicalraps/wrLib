@@ -129,10 +129,10 @@ float transport_speed_step( transport_t* self )
                    );
 }
 
-float* transport_speed_block( transport_t* self
-                            , float*       buffer
-                            , int          b_size
-                            )
+float* transport_speed_v( transport_t* self
+                        , float*       buffer
+                        , int          b_size
+                        )
 {
     float* o = buffer;
     for( int i=0; i<b_size; i++ ){
