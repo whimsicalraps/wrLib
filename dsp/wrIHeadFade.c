@@ -205,12 +205,52 @@ void ihead_fade_poke_v( ihead_fade_t*  self, buffer_t* buf
                                            , float*    io
                                            , int       size )
 {
-    for( int i=0; i<size; i++ ){
-        ihead_fade_poke( self
-                       , buf
-                       , motion[i]
-                       , io[i]
-                       );
+    if( ihead_fade_is_recording( self ) ){ // skip poke if not recording
+        for( int i=0; i<size; i++ ){
+
+
+// TODO vectorize this!
+    // decide if lp1 slews are going to be per-sample or per-block
+
+            ihead_t* hA = self->head[self->fade_active_head];
+            float r = lp1_step_internal( self->rec_slew );
+            float p = lp1_step_internal( self->pre_slew );
+            if( self->fade_countdown > 0 ){
+                ihead_t* hB = self->head[!self->fade_active_head];
+                float mphase = 1.0 - self->fade_phase;
+
+                // fade out
+                ihead_rec_level( hB, r * rec_fade_LUT_get( mphase ) );
+                float lut = pre_fade_LUT_get(self->fade_phase);
+                float xf = 1.0 + lut*(p - 1.0);
+                ihead_pre_level( hB, xf);
+                ihead_poke( hB, buf, motion[i], io[i] );
+
+                // fade in
+                ihead_rec_level( hA, r * rec_fade_LUT_get(self->fade_phase) );
+                lut = pre_fade_LUT_get( mphase );
+                xf = 1.0 + lut*(p - 1.0);
+                ihead_pre_level( hA, xf);
+                ihead_poke( hA, buf, motion[i], io[i] );
+            } else { // single head
+                ihead_rec_level( hA, r );
+                ihead_pre_level( hA, p );
+                ihead_poke( hA, buf, motion[i], io[i] );
+            }
+        }
+
+        if( !self->fade_recording_dest ){
+            if( lp1_converged( self->rec_slew ) ){
+                ihead_recording( self->head[0], false );
+                ihead_recording( self->head[1], false );
+            }
+        }
+
+    } else { // not recording
+        for( int i=0; i<size; i++ ){ // TODO is this necessary?
+            lp1_step_internal( self->rec_slew );
+            lp1_step_internal( self->pre_slew );
+        }
     }
 }
 
@@ -235,6 +275,7 @@ static void update_poke_slews( ihead_fade_t* self )
     // update slews for rec/pre heads
     lp1_step_internal( self->rec_slew );
     lp1_step_internal( self->pre_slew );
+
     if( self->fade_recording_dest != ihead_fade_is_recording( self ) ){
         if( lp1_converged( self->rec_slew ) ){
             ihead_recording( self->head[0], false );

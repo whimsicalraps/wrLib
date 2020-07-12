@@ -51,10 +51,16 @@ float ihead_get_pre_level( ihead_t* self );
 ////////////////////////////////////////
 // signal
 // WRITE / ERASE HEAD
-void ihead_poke( ihead_t*  self
-               , buffer_t* buf
-               , float     speed
-               , float     input );
+void ihead_poke( ihead_t* self, buffer_t* buf
+                              , float     speed
+                              , float     input );
+void ihead_poke_v( ihead_t* self, buffer_t* buf
+                                , float*    motion
+                                , float*    io
+                                , int       size );
 // READ HEAD
 float ihead_peek( ihead_t* self, buffer_t* buf, float speed );
-float* ihead_peek_v( ihead_t* self, float* io, buffer_t* buf, float* motion, int size );
+float* ihead_peek_v( ihead_t* self, float*    io
+                                  , buffer_t* buf
+                                  , float*    motion
+                                  , int       size );

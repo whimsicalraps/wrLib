@@ -80,11 +80,9 @@ int ihead_get_location( ihead_t* self ){ return self->rphase.i; }
 ///////////////////////////////////////
 // signals
 
-void ihead_poke( ihead_t*  self
-               , buffer_t* buf
-               , float     speed
-               , float     input
-               )
+void ihead_poke( ihead_t* self, buffer_t* buf
+                              , float     speed
+                              , float     input )
 {
     if( speed == 0.0 ){ return; }
 
@@ -98,6 +96,22 @@ void ihead_poke( ihead_t*  self
                     , self->write_ix, nframes_dir, self->pre_level );
     }
     self->write_ix += nframes_dir;
+}
+
+void ihead_poke_v( ihead_t* self, buffer_t* buf
+                                , float*    motion
+                                , float*    io
+                                , int       size )
+{
+    // WIP
+    // would write() benefit from vectorization?
+    // can buffer_mac_v operate over a wider window of samples?
+    // can we pass a meaningful vector of pre_level to mac_v?
+        // perhaps peek_v & poke_v can be resurrected?
+        // if they are *much* faster than before, might allow per-sample slews?
+    for( int i=0; i<size; i++ ){ // WIP
+        ihead_poke( self, buf, motion[i], io[i] );
+    }
 }
 
 float ihead_peek( ihead_t* self, buffer_t* buf, float speed )
