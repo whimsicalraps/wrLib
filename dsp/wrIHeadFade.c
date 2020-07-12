@@ -14,8 +14,6 @@
 static void ihead_fade_slew_heads( ihead_fade_t* self );
 static void update_poke_slews( ihead_fade_t* self );
 static void update_peek_phase( ihead_fade_t* self, float speed );
-static void update_peek_phase2( ihead_fade_t* self, float speed );
-static void update_peek_phase_head( ihead_t* self, float speed );
 
 
 ///////////////////////////////
@@ -251,23 +249,6 @@ static void update_poke_slews( ihead_fade_t* self )
 }
 
 static void update_peek_phase( ihead_fade_t* self, float speed )
-{
-    { // update phase (active head)
-        phase_t* p = &(self->head[ self->fade_active_head ]->rphase);
-        p->f += speed;
-        while( p->f >= 1.0 ){ p->i++; p->f -= 1.0; }
-        while( p->f <  0.0 ){ p->i--; p->f += 1.0; }
-    }
-    if( self->fade_countdown > 0 ){ // update phase (inactive head)
-        self->fade_countdown--;
-        phase_t* p = &(self->head[!self->fade_active_head ]->rphase);
-        p->f += speed;
-        while( p->f >= 1.0 ){ p->i++; p->f -= 1.0; }
-        while( p->f <  0.0 ){ p->i--; p->f += 1.0; }
-    }
-}
-
-static void update_peek_phase2( ihead_fade_t* self, float speed )
 {
     ihead_update_peek_phase( self->head[ self->fade_active_head ], speed );
     if( self->fade_countdown > 0 ){ // update phase (inactive head)
