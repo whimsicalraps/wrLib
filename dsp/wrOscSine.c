@@ -11,6 +11,8 @@
 //	sine_lut[i] = sin(2PI * i / LUT_SIN_SIZE);
 // } sine_lut[LUT_SIN_SIZE] = 0.0;
 
+static float lookup_sine( float id );
+
 // note extra '0' for interpolation safety
 // using cosine to phase align with triangle
 const float sine_lut[LUT_SIN_SIZE + 1]={
@@ -25,9 +27,8 @@ osc_sine_t* sine_init( void )
 {
     osc_sine_t* self = malloc( sizeof(osc_sine_t) );
     if( !self ){ printf("!osc_sine\n"); return NULL; }
-    self->rate   = 0.02f;
-    self->id     = 0.0f;
-    self->zero_x = 1;
+    self->rate = 0.02;
+    self->id   = 0.0;
     return self;
 }
 
@@ -40,132 +41,69 @@ void sine_deinit( osc_sine_t* self )
 // expect 0-1, but can accept through -1 for TZ effects
 void osc_sine_time( osc_sine_t* self, float time_ )
 {
-	// 1.0 = sample_rate
-	// 0.0 = stopped
-	// -1. = inverse SR
-	self->rate = lim_f_n1_1( time_ );
+    // 1.0 = sample_rate
+    // 0.0 = stopped
+    // -1. = inverse SR
+    self->rate = lim_f_n1_1( time_ );
 }
 
 void osc_sine_reset( osc_sine_t* self )
 {
-	self->id     = 0.0f;
-	self->zero_x = 1;
+    self->id = 0.0;
 }
-
-// status
-int8_t osc_sine_get_zc( osc_sine_t* self )
-{
-	return (self->zero_x);
-}
-
-// nb: incrementers run 0-1 w/ zero cross at 0.5
 
 // single-sample
 float osc_sine_step( osc_sine_t* self, float fm )
 {
-	float odd = self->id;
-	self->id += self->rate + fm;
-
-	// edge & zero-cross detection
-	if( self->id >= 2.0f ){
-		self->id -= 2.0f;
-		self->zero_x = 1; // ZERO
-	} else if( (self->id >= 1.0f) && (odd < 1.0f) ){
-		self->zero_x = -1; // PEAK/TROUGH
-	} else if( self->id < 0.0f ){
-		self->id += 2.0f;
-		self->zero_x = 1; // ZERO
-	} else {
-		self->zero_x = 0;
-	}
-
-	// lookup table w/ linear interpolation
-	float fbase = (float)LUT_SIN_HALF * self->id;
-	uint16_t base = (uint16_t)fbase;
-	float mix = fbase - (float)base;
-	float lut = sine_lut[base];
-	return (lut + mix * (sine_lut[base + 1] - lut));
+    self->id += self->rate + fm;
+    while( self->id >= 2.0 ){ self->id -= 2.0; }
+    while( self->id <  0.0 ){ self->id += 2.0; }
+    return lookup_sine( self->id );
 }
 
 void osc_sine_process_v( osc_sine_t* self
-	                   , uint16_t    b_size
-	                   , float*      exp_fm
-	                   , float*      lin_fm
-	                   , float*      out
-	                   )
+                       , uint16_t    b_size
+                       , float*      exp_fm
+                       , float*      lin_fm
+                       , float*      out
+                       )
 {
-	float* expfm = exp_fm;
-	float* linfm = lin_fm;
-	float* out2 = out;
+    float* expfm = exp_fm;
+    float* linfm = lin_fm;
+    float* out2 = out;
 
-	float odd;
-	float fbase;
-	uint32_t base;
-	float mix;
-	float* lut;
-
-	for( uint16_t i=0; i<b_size; i++ ){
-		odd = self->id;
-		self->id += self->rate * (*expfm++) + (*linfm++);
-
-		// edge & zero-cross detection
-		if( self->id >= 2.0f ){
-			self->id -= 2.0f;
-			self->zero_x = i+1;
-		} else if( (self->id >= 1.0f) && (odd < 1.0f) ){
-			self->zero_x = -(i+1);
-		} else if( self->id < 0.0f ){
-			self->id += 2.0f;
-			self->zero_x = 1;
-		} else {
-			self->zero_x = 0;
-		}
-
-		// lookup table w/ linear interpolation
-		fbase = (float)LUT_SIN_HALF * self->id;
-		base = (uint32_t)fbase;
-		mix = fbase - (float)base;
-		lut = (float*) &sine_lut[base];
-		*out2++ = *lut + mix * (lut[1] - *lut);
-	}
+    for( uint16_t i=0; i<b_size; i++ ){
+        self->id += self->rate * (*expfm++) + (*linfm++);
+        while( self->id >= 2.0 ){ self->id -= 2.0; }
+        while( self->id <  0.0 ){ self->id += 2.0; }
+        *out2++ = lookup_sine( self->id );
+    }
 }
 
 float* sine_process_base_v( osc_sine_t* self
                           , float*      out
-                          , uint16_t    b_size
+                          , int         b_size
                           )
 {
-    float* out2 = out;
-
-    float odd;
-    float fbase;
-    uint32_t base;
-    float mix;
-    float* lut;
-
-    for( uint16_t i=0; i<b_size; i++ ){
-        odd = self->id;
-        self->id += self->rate;
-
-        // edge & zero-cross detection
-        if( self->id >= 2.0f ){
-            self->id -= 2.0f;
-            self->zero_x = i+1;
-        } else if( (self->id >= 1.0f) && (odd < 1.0f) ){
-            self->zero_x = -(i+1);
-        } else if( self->id < 0.0f ){
-            self->id += 2.0f;
-            self->zero_x = 1;
-        } else {
-            self->zero_x = 0;
+    if( self->rate >= 0.0 ){
+        for( int i=0; i<b_size; i++ ){
+            self->id += self->rate;
+            while( self->id >= 2.0 ){ self->id -= 2.0; }
+            out[i] = lookup_sine( self->id );
         }
-
-        // lookup table w/ linear interpolation
-        fbase = (float)LUT_SIN_HALF * self->id;
-        base = (uint32_t)fbase;
-        mix = fbase - (float)base;
-        lut = (float*) &sine_lut[base];
-        *out2++ = *lut + mix * (lut[1] - *lut);
+    } else { // rate < 0.0
+        for( int i=0; i<b_size; i++ ){
+            self->id += self->rate;
+            while( self->id < 0.0 ){ self->id += 2.0; }
+            out[i] = lookup_sine( self->id );
+        }
     }
     return out;
+}
+
+static float lookup_sine( float id ){
+    float fix   = (float)LUT_SIN_HALF * id; // scale [0..2) up to LUT_SIN_SIZE
+    int   iix   = (int)fix;
+    float coeff = fix - (float)iix;
+    return sine_lut[iix] + coeff * (sine_lut[iix+1] - sine_lut[iix]);
 }

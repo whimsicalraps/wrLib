@@ -7,9 +7,8 @@
 extern const float sine_lut[];
 
 typedef struct osc_sine{
-	float rate;
-	float id;
-	int8_t zero_x;
+    float rate;
+    float id;
 } osc_sine_t;
 
 // initialization
@@ -22,16 +21,13 @@ void sine_deinit( osc_sine_t* self );
 void osc_sine_time( osc_sine_t* self, float time );
 void osc_sine_reset( osc_sine_t* self );
 
-// status
-int8_t osc_sine_get_zc( osc_sine_t* self );
-
 // process
 float osc_sine_step( osc_sine_t* self, float fm ); // fm == 0 is no mod
 void osc_sine_process_v( osc_sine_t* self
-	                   , uint16_t    b_size
-	                   , float*      exp_fm // expo scaler (*)
-	                   , float*      lin_fm // linear offset (+)
-	                   , float*      out );
+                       , uint16_t    b_size
+                       , float*      exp_fm // expo scaler (*)
+                       , float*      lin_fm // linear offset (+)
+                       , float*      out );
 float* sine_process_base_v( osc_sine_t* self
-	                      , float*      out
-	                      , uint16_t    b_size );
+                          , float*      out
+                          , int    b_size );
