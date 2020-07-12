@@ -17,6 +17,12 @@ void _poke_v( buffer_interface_t* self
             , int origin
             , int count
             );
+void _mac_v( buffer_interface_t* self
+           , float* io
+           , int origin
+           , int count
+           , float coeff
+           );
 bool _request( buffer_interface_t* self, int location );
 void _free( buffer_interface_t* self );
 
@@ -32,6 +38,7 @@ buffer_interface_t* buffer_interface_init( void )
     self->buf     = NULL;
     self->peek_v  = _peek_v;
     self->poke_v  = _poke_v;
+    self->mac_v   = _mac_v;
     self->request = _request;
     self->free    = _free;
 
@@ -55,7 +62,6 @@ float* _peek_v( buffer_interface_t* self
               , int count
               )
 {
-
     float* s = io;
     int dir = (count>=0) ? 1 : -1;
     int abscount = (count>=0) ? count : -count;
@@ -86,6 +92,27 @@ void _poke_v( buffer_interface_t* self
         while( origin < 0 ){ origin += self->buf->len; }
         while( origin >= self->buf->len ){ origin -= self->buf->len; }
         buffer[origin] = *s++;
+        origin += dir;
+    }
+}
+
+void _mac_v( buffer_interface_t* self
+           , float* io
+           , int origin
+           , int count
+           , float coeff
+           )
+{
+    float* s = io;
+    int dir = (count>=0) ? 1 : -1;
+    int abscount = (count>=0) ? count : -count;
+    float* buffer = (float*)self->buf->b;
+    for( int i=0; i<abscount; i++ ){
+        while( origin < 0 ){ origin += self->buf->len; }
+        while( origin >= self->buf->len ){ origin -= self->buf->len; }
+        float bs = buffer[origin];
+    // TODO any filtering happens here
+        buffer[origin] = *s++ + bs*coeff;
         origin += dir;
     }
 }

@@ -74,6 +74,12 @@ void buffer_poke_v( buffer_t* self, float* dst, int origin, int count )
     return (*i->poke_v)( i, dst, origin, count );
 }
 
+void buffer_mac_v( buffer_t* self, float* dst, int origin, int count, float coeff )
+{
+    buffer_interface_t* i = (buffer_interface_t*)(self->interface);
+    return (*i->mac_v)( i, dst, origin, count, coeff );
+}
+
 bool buffer_request( buffer_t* self, int location )
 {
     buffer_interface_t* i = (buffer_interface_t*)(self->interface);

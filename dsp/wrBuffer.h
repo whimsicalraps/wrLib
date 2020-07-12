@@ -17,6 +17,7 @@ typedef struct buffer_interface{
     // user-provided fnptrs for access
     float* (*peek_v)( struct buffer_interface*, float*, int, int);
     void (*poke_v)( struct buffer_interface*, float*, int, int);
+    void (*mac_v)( struct buffer_interface*, float*, int, int, float);
     bool (*request)( struct buffer_interface*, int );
     void (*free)( struct buffer_interface* );
 
@@ -28,6 +29,7 @@ typedef struct buffer_interface{
 // saves dereferencing later on
 typedef float* (*buffer_peek_v_t)( buffer_interface_t*, float*, int, int );
 typedef void (*buffer_poke_v_t)( buffer_interface_t*, float*, int, int );
+typedef void (*buffer_mac_v_t)( buffer_interface_t*, float*, int, int, float );
 typedef bool (*buffer_request_t)( buffer_interface_t*, int );
 
 // setup
@@ -42,4 +44,5 @@ buffer_t* buffer_load_and_own( buffer_t* self, float* buffer, int length );
 // these accessors wrap a user-provided implementation through buffer_interface_t
 float* buffer_peek_v( buffer_t* self, float* dst, int origin, int count );
 void buffer_poke_v( buffer_t* self, float* dst, int origin, int count );
+void buffer_mac_v( buffer_t* self, float* dst, int origin, int count, float coeff );
 bool buffer_request( buffer_t* self, int location );
