@@ -4,10 +4,12 @@
 
 // private declarations
 void _lpgate_mode_select( lpgate_t* self );
-float* lpgate_v_filt(     lpgate_t* self, float* level, float* buffer, int b_size );
-float* lpgate_v_gate(     lpgate_t* self, float* level, float* buffer, int b_size );
-float* lpgate_v_filt_hpf( lpgate_t* self, float* level, float* buffer, int b_size );
-float* lpgate_v_gate_hpf( lpgate_t* self, float* level, float* buffer, int b_size );
+static float* filter_hpf_v( lpgate_t* self, float* level, float* buffer, int b_size );
+static float* gate_hpf_v( lpgate_t* self, float* level, float* buffer, int b_size );
+static float* filter_v( lpgate_t* self, float* level, float* buffer, int b_size );
+static float* gate_v( lpgate_t* self, float* level, float* buffer, int b_size );
+
+
 
 lpgate_t* lpgate_init( uint8_t hpf
                      , uint8_t filter
@@ -45,10 +47,10 @@ void _lpgate_mode_select( lpgate_t* self
                         ){
     // [filter][hpf]
     static float* (*fnptr[2][2])() =
-        { { lpgate_v_gate
-          , lpgate_v_gate_hpf }
-        , { lpgate_v_filt
-          , lpgate_v_filt_hpf }
+        { { gate_v
+          , gate_hpf_v }
+        , { filter_v
+          , filter_hpf_v }
         };
     self->lpgate_fnptr = fnptr[ self->filter ][ self->hpf ];
 }
@@ -174,39 +176,20 @@ static float* hpf_v( lpgate_t* self
     return buffer;
 }
 
-
-// TODO do we need to handle self->prev_* assignment outside the vectors?
-//      if not, can remove the non-hpf wrappers & call directly
-float* lpgate_v_filt_hpf( lpgate_t* self
-                        , float*    level
-                        , float*    buffer
-                        , int       b_size
-                        ){
+static float* filter_hpf_v( lpgate_t* self
+                          , float*    level
+                          , float*    buffer
+                          , int       b_size
+                          ){
     filter_v( self, level, buffer, b_size );
     return hpf_v( self, level, buffer, b_size );
 }
 
-float* lpgate_v_gate_hpf( lpgate_t* self
+static float* gate_hpf_v( lpgate_t* self
                         , float*    level
                         , float*    buffer
                         , int       b_size
                         ){
     gate_v( self, level, buffer, b_size );
     return hpf_v( self, level, buffer, b_size );
-}
-
-float* lpgate_v_filt( lpgate_t* self
-                    , float*    level
-                    , float*    buffer
-                    , int       b_size
-                    ){
-    return filter_v( self, level, buffer, b_size );
-}
-
-float* lpgate_v_gate( lpgate_t* self
-                    , float*    level
-                    , float*    buffer
-                    , int       b_size
-                    ){
-    return gate_v( self, level, buffer, b_size );
 }
