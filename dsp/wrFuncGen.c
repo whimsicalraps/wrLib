@@ -220,7 +220,7 @@ float* function_ramp_v( func_gen_t* self
     float max = 1.0 - f; // (-1,1 range)
     float min = 0.0 + f; // (-1,1 range)
     // bandlimiting based on base pitch of function
-    for(uint16_t i=0;i<b_size;i++){
+    for( int i=0; i < b_size; i++ ){
         float t = ctrl_rate + *audio_rate2++;
         t = (t<min) ? min : (t>max) ? max : t;
         *ramp_up2 = 0.501002
@@ -390,7 +390,7 @@ float* function_fmix_v( func_gen_t* self
     self->zc = 0;
 
     if( self->go ){
-        for(uint16_t i=0; i<b_size; i++){
+        for( int i=0; i<b_size; i++ ){
             float move = ( *fm_in2++               // FM audio source
                            * ( self->fm_ix         // FM pot
                                + *fm_ix++ )  // FM index adds to pot
