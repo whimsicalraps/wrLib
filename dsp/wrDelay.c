@@ -55,7 +55,7 @@ void delay_deinit( delay_t* self )
 // setters
 void delay_rate( delay_t* self, float rate )
 {
-    self->play->transport->speeds.accel_standard = 0.001;
+    self->play->transport->speeds.accel_standard = 0.01;
     self->rate = rate;
     apply_rate( self );
 }
