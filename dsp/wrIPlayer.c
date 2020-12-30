@@ -261,7 +261,7 @@ static int tape_clamp( player_t* self, int location ){
 
 static void queue_goto( player_t* self, int sample ){
     if( sample != self->queued_location ){
-        printf("TODO queue a request until it becomes available %i\n", sample);
+        printf("TODO queue a request until it becomes available 0x%x\n", sample);
         self->queued_location = sample;
     }
 }
