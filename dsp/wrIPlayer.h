@@ -44,6 +44,7 @@ void player_loop_end( player_t* self, int location );
 // param getters
 bool player_is_playing( player_t* self );
 int player_get_goto( player_t* self );
+int player_get_queued_goto( player_t* self );
 float player_get_speed( player_t* self );
 float player_get_speed_offset( player_t* self );
 float player_get_speed_live( player_t* self );

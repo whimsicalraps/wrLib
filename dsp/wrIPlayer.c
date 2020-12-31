@@ -11,7 +11,6 @@
 static int tape_clamp( player_t* self, int location );
 static bool player_is_going( player_t* self );
 static void queue_goto( player_t* self, int sample );
-static int get_queued_goto( player_t* self );
 
 
 ///////////////////////////////
@@ -132,6 +131,8 @@ bool player_is_playing( player_t* self ){
     return transport_is_active( self->transport ); }
 int player_get_goto( player_t* self ){
     return ihead_fade_get_location( self->head ); }
+int player_get_queued_goto( player_t* self ){
+    return self->queued_location; }
 float player_get_speed( player_t* self ){
     return transport_get_speed( self->transport ); }
 float player_get_speed_offset( player_t* self ){
@@ -161,7 +162,7 @@ float player_step( player_t* self, float in )
 {
     if( !self->buf ){ return 0.0; } // no buffer available
 
-    int goto_dest = get_queued_goto( self );
+    int goto_dest = player_get_queued_goto( self );
     if( goto_dest != -1 ){ // check if a queued goto is ready
         //printf("try queued\n");
         player_goto( self, goto_dest );
@@ -206,7 +207,7 @@ float* player_step_v( player_t* self, float* io, int size )
 {
     if( !self->buf ){ return b_cp( io, 0.0, size ); } // no buffer available
 
-    int goto_dest = get_queued_goto( self );
+    int goto_dest = player_get_queued_goto( self );
     if( goto_dest != -1 ){ // check if a queued goto is ready
         //printf("try queued\n");
         player_goto( self, goto_dest );
@@ -266,10 +267,8 @@ static int tape_clamp( player_t* self, int location ){
 
 static void queue_goto( player_t* self, int sample ){
     if( sample != self->queued_location ){
-        printf("TODO queue a request until it becomes available 0x%x\n", sample);
         self->queued_location = sample;
     }
 }
 
-static int get_queued_goto( player_t* self ){ return self->queued_location; }
 static bool player_is_going( player_t* self ){ return self->going; }
