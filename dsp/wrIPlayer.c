@@ -5,12 +5,21 @@
 
 #include "wrBlocks.h"
 
+/////////////////////////////////
+// constants
+
+#define LEAD_IN (64) // essentially an empty zone on either end of buffer
+    // FIXME should be able to forgo LEAD_IN when looping whole buffer
+    // in fact -- it shouldn't use 'goto' but just wrap the indices
+
+
 ///////////////////////////////
 // private declarations
 
 static int tape_clamp( player_t* self, int location );
 static bool player_is_going( player_t* self );
 static void queue_goto( player_t* self, int sample );
+static void order_loop_points( player_t* self );
 
 
 ///////////////////////////////
@@ -118,9 +127,11 @@ void player_loop( player_t* self, bool is_looping ){
 }
 void player_loop_start( player_t* self, int location ){
     self->loop_start = tape_clamp( self, location );
+    order_loop_points(self);
 }
 void player_loop_end( player_t* self, int location ){
     self->loop_end = tape_clamp( self, location );
+    order_loop_points(self);
 }
 
 
@@ -154,19 +165,52 @@ int player_get_loop_end( player_t* self ){ return self->loop_end; }
 /////////////////////////////////////
 // signals
 
-// this is an abstraction of a 'tape head'
-#define LEAD_IN (64) // essentially an empty zone on either end of buffer
-    // FIXME should be able to forgo LEAD_IN when looping whole buffer
-    // in fact -- it shouldn't use 'goto' but just wrap the indices
-float player_step( player_t* self, float in )
+static void request_queued_goto( player_t* self )
 {
-    if( !self->buf ){ return 0.0; } // no buffer available
-
     int goto_dest = player_get_queued_goto( self );
     if( goto_dest != -1 ){ // check if a queued goto is ready
         //printf("try queued\n");
         player_goto( self, goto_dest );
     }
+}
+
+static void edge_checks( player_t* self )
+{
+    if( !player_is_going( self ) ){ // only edge check if there isn't a queued jump
+        int new_phase = ihead_fade_get_location( self->head );
+        int jumpto = -1;
+        // TODO would it be better to jump exactly? rather than re: LEAD_IN
+        // TODO self->loop could be a (-1,0,1) where -1 'jumps' over the loop (UNLOOP)
+            // in this case, need to add extra case
+// TEST THIS
+        // Always test for tape edges before loop (incase of UNLOOP over the join)
+        if( new_phase >= (self->tape_end - LEAD_IN) ){ jumpto = LEAD_IN; }
+        else if( new_phase < LEAD_IN ){ jumpto = self->tape_end - LEAD_IN; }
+        else if( self->loop ){ // apply loop brace
+            if( new_phase >= self->o_loop_end ){ jumpto = self->o_loop_start; }
+            else if( new_phase < self->o_loop_start ){ jumpto = self->o_loop_end; }
+        }
+    // UNLOOP
+        /*
+        else if( self->loop == UNLOOP ){
+            // need to test against both the opposite edge, and the negative space
+            // eg: (start > np >= end) -> start
+            //     (end <= np < start) -> end
+        }
+        */
+        if( jumpto >= 0 ){ // if there's a new jump, request it
+            player_goto( self, jumpto );
+        }
+    }
+}
+
+
+// this is an abstraction of a 'tape head'
+float player_step( player_t* self, float in )
+{
+    if( !self->buf ){ return 0.0; } // no buffer available
+
+    request_queued_goto( self );
 
     bool fwd = transport_get_speed_live( self->transport ) >= 0;
     float motion = transport_speed_step( self->transport );
@@ -180,22 +224,8 @@ float player_step( player_t* self, float in )
                    , motion
                    , in
                    );
-    int new_phase = ihead_fade_get_location( self->head );
 
-    if( !player_is_going( self ) ){ // only edge check if there isn't a queued jump
-        int jumpto = -1;
-        if( self->loop ){ // apply loop brace
-            if( new_phase >= self->loop_end ){ jumpto = self->loop_start; }
-            else if( new_phase <  self->loop_start ){ jumpto = self->loop_end; }
-        } else { // no loop brace, so just loop the whole buffer
-            // TODO this check could be *always* run, but result in a STOP (tape edge safety)
-            if( new_phase >= (self->tape_end - LEAD_IN) ){ jumpto = LEAD_IN; }
-            else if( new_phase < LEAD_IN ){ jumpto = self->tape_end - LEAD_IN; }
-        }
-        if( jumpto >= 0 ){ // if there's a new jump, request it
-            player_goto( self, jumpto );
-        }
-    }
+    edge_checks( self );
 
     if( !self->play_before_erase && ihead_fade_is_recording( self->head ) ){
         out *= ihead_fade_get_pre_level( self->head );
@@ -207,11 +237,7 @@ float* player_step_v( player_t* self, float* io, int size )
 {
     if( !self->buf ){ return b_cp( io, 0.0, size ); } // no buffer available
 
-    int goto_dest = player_get_queued_goto( self );
-    if( goto_dest != -1 ){ // check if a queued goto is ready
-        //printf("try queued\n");
-        player_goto( self, goto_dest );
-    }
+    request_queued_goto( self );
 
     { // motion[], outie[]
         bool last_dir = (transport_get_speed_live( self->transport ) >= 0);
@@ -232,20 +258,7 @@ float* player_step_v( player_t* self, float* io, int size )
         b_cp_v( io, outie, size );
     }
 
-    if( !player_is_going( self ) ){ // only edge check if there isn't a queued jump
-        int new_phase = ihead_fade_get_location( self->head );
-        int jumpto = -1;
-        if( self->loop ){ // apply loop brace
-            if( new_phase >= self->loop_end ){ jumpto = self->loop_start; }
-            else if( new_phase <  self->loop_start ){ jumpto = self->loop_end; }
-        } else { // no loop brace, so just loop the whole buffer
-            if( new_phase >= (self->tape_end - LEAD_IN) ){ jumpto = LEAD_IN; }
-            else if( new_phase < LEAD_IN ){ jumpto = self->tape_end - LEAD_IN; }
-        }
-        if( jumpto >= 0 ){ // if there's a new jump, request it
-            player_goto( self, jumpto );
-        }
-    }
+    edge_checks( self );
 
     if( !self->play_before_erase && ihead_fade_is_recording( self->head ) ){
         b_mul( io
@@ -272,3 +285,15 @@ static void queue_goto( player_t* self, int sample ){
 }
 
 static bool player_is_going( player_t* self ){ return self->going; }
+
+static void order_loop_points( player_t* self )
+{
+    // TODO handle UNLOOP version where we jump over it
+    if( self->loop_start < self->loop_end ){ // forward
+        self->o_loop_start = self->loop_start;
+        self->o_loop_end   = self->loop_end;
+    } else { // reverse
+        self->o_loop_start = self->loop_end;
+        self->o_loop_end   = self->loop_start;
+    }
+}

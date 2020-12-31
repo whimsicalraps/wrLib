@@ -13,6 +13,8 @@ typedef struct{
     bool loop;
     int  loop_start;
     int  loop_end;
+    int  o_loop_start; // ordered version of above
+    int  o_loop_end; // ordered version of above
     int  location; // 'playhead' pointer to buffer
     float location_sub; // sub-sample interpolant
     bool going; // flag if a buf request is enqueued
