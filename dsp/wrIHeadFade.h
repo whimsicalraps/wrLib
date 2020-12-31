@@ -32,6 +32,7 @@ void ihead_fade_deinit( ihead_fade_t* self );
 ////////////////////////////////////////
 // params: setters
 void ihead_fade_jumpto( ihead_fade_t* self, buffer_t* buf, int phase, bool is_forward );
+void ihead_fade_align( ihead_fade_t* self, bool is_forward );
 void ihead_fade_recording( ihead_fade_t* self, bool is_recording );
 void ihead_fade_rec_level( ihead_fade_t* self, float level );
 void ihead_fade_pre_level( ihead_fade_t* self, float level );

@@ -66,6 +66,10 @@ void ihead_jumpto( ihead_t* self, buffer_t* buf, int phase, bool is_forward ){
     self->rphase.i = phase;
     self->rphase.f = 0.0;
 }
+void ihead_align( ihead_t* self, bool is_forward ){
+    self->write_ix = (is_forward) ? self->rphase.i + REC_OFFSET
+                                  : self->rphase.i - REC_OFFSET;
+}
 
 
 //////////////////////////////////

@@ -88,6 +88,11 @@ void ihead_fade_jumpto( ihead_fade_t* self, buffer_t* buf, int phase, bool is_fo
     if( count > 0 ){ self->fade_increment = 1.0 / count; }
 }
 
+void ihead_fade_align( ihead_fade_t* self, bool is_forward ){
+    ihead_align( self->head[0], is_forward );
+    ihead_align( self->head[1], is_forward );
+}
+
 
 //////////////////////////////////
 // params: getters
@@ -248,6 +253,7 @@ void ihead_fade_poke_v( ihead_fade_t*  self, buffer_t* buf
 
     } else { // not recording
         for( int i=0; i<size; i++ ){ // TODO is this necessary?
+            // TODO can optimize this to step by a 'block' of stages
             lp1_step_internal( self->rec_slew );
             lp1_step_internal( self->pre_slew );
         }

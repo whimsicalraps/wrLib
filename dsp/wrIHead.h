@@ -36,10 +36,11 @@ void ihead_deinit( ihead_t* self );
 
 ////////////////////////////////////////
 // params: setters
-void ihead_jumpto( ihead_t* self, buffer_t* buf, int phase, bool is_forward );
 void ihead_recording( ihead_t* self, bool is_recording );
 void ihead_rec_level( ihead_t* self, float level );
 void ihead_pre_level( ihead_t* self, float level );
+void ihead_jumpto( ihead_t* self, buffer_t* buf, int phase, bool is_forward );
+void ihead_align( ihead_t* self, bool is_forward );
 
 ////////////////////////////////////////
 // params: getters
