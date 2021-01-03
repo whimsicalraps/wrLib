@@ -7,10 +7,11 @@
 
 static void apply_rate( delay_t* self );
 static float get_loop_samples( delay_t* self );
-void mac_v( buffer_interface_t* self, float* io
+static void mac_v( buffer_interface_t* self, float* io
                                     , int origin
                                     , int count
                                     , float coeff);
+static void apply_loop_brace( delay_t* self, float samples );
 
 
 //////////////////////////////////
@@ -103,22 +104,19 @@ void delay_time( delay_t* self, float samples )
         //player_loop( self->play, 1 );
         //player_loop_start( self->play, start );
         //player_loop_end( self->play, start + bdiv );
-    } else if( adjusted_s < self->play->tape_end ){ // FIXME account for LEAD_IN
-        // apply length directly
-        // FIXME rework after loop points can wrap over the buffer end
-        player_loop_start( self->play, 0 );
-        player_loop_end( self->play, adjusted_s );
-        player_loop( self->play, 1 );
-    } else {
-        while( adjusted_s >= self->play->tape_end ){ // if too long, half sample rate
+    } else if( adjusted_s < player_get_tape_length( self->play ) ){
+        // apply length from 'here'
+        apply_loop_brace( self, adjusted_s );
+    } else { // longer than 1x capable
+        // half samples & rate until in range
+        float tape_len = player_get_tape_length( self->play );
+        while( adjusted_s >= tape_len ){
             rate *= 0.5;
             adjusted_s = samples * rate;
         }
         if( rate >= (1.0/16.0) ){
             delay_rate( self, rate );
-            player_loop_start( self->play, 0 );
-            player_loop_end( self->play, adjusted_s );
-            player_loop( self->play, 1 );
+            apply_loop_brace( self, adjusted_s );
         } else {
             printf("TODO ignoring delay_time as rate would be <(1/16).\n");
         }
@@ -259,16 +257,22 @@ static void apply_rate( delay_t* self )
 static float get_loop_samples( delay_t* self )
 {
     float t=0.0;
-    if( player_is_looping( self->play ) ){
-        // FIXME handle outside loops (ie end before start)
-        t = player_get_loop_end( self->play ) - player_get_loop_start( self->play );
-    } else {
-        t = self->play->tape_end;
+    switch( player_get_looping( self->play ) ){
+        case 1: // regular loop
+            t = player_get_loop_end( self->play ) - player_get_loop_start( self->play );
+            break;
+        case 2: // unloop TODO
+            // FIXME handle outside loops (ie end before start)
+            t = player_get_loop_end( self->play ) - player_get_loop_start( self->play );
+            break;
+        default:
+            t = self->play->tape_end;
+            break;
     }
     return t;
 }
 
-void mac_v( buffer_interface_t* self, float* io
+static void mac_v( buffer_interface_t* self, float* io
                                     , int    origin
                                     , int    count
                                     , float  coeff )
@@ -291,4 +295,25 @@ void mac_v( buffer_interface_t* self, float* io
         buffer[origin] = *s++ + LAST_SAMP;
         origin += dir;
     }
+}
+
+static void apply_loop_brace( delay_t* self, float samples )
+{
+    float new_start = player_get_goto( self->play );
+    player_loop_start( self->play, new_start );
+    float new_end = new_start + samples;
+    switch( player_is_location_off_tape( self->play, new_end ) ){
+        case 1: // past end
+            player_loop_end( self->play
+                , new_end - player_get_tape_length( self->play ));
+            break;
+        case -1: // before beginning
+            player_loop_end( self->play
+                , new_end + player_get_tape_length( self->play ));
+            break;
+        default:
+            player_loop_end( self->play, new_end );
+            break;
+    }
+    player_loop( self->play, 1 );
 }

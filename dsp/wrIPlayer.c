@@ -184,7 +184,9 @@ int player_get_looping( player_t* self ){ return self->loop; }
 int player_get_loop_start( player_t* self ){ return self->loop_start; }
 int player_get_loop_end( player_t* self ){ return self->loop_end; }
 int player_get_loop_size( player_t* self ){ return self->loop_size; }
-
+int player_get_tape_length( player_t* self ){
+    return self->tape_end - 2*LEAD_IN;
+}
 
 /////////////////////////////////////
 // queries
@@ -229,6 +231,14 @@ float player_position_in_loop( player_t* self, int location )
         default: pos = -1.0; // means not looping
     }
     return pos;
+}
+
+int player_is_location_off_tape( player_t* self, int location )
+{
+    int inside = false;
+    if( location < LEAD_IN ){ inside = -1; }
+    if( location > (self->tape_end - LEAD_IN) ){ inside = 1; }
+    return inside;
 }
 
 

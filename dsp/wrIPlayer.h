@@ -59,10 +59,12 @@ int player_get_looping( player_t* self );
 int player_get_loop_start( player_t* self );
 int player_get_loop_end( player_t* self );
 int player_get_loop_size( player_t* self );
+int player_get_tape_length( player_t* self );
 
 // queries
 bool player_is_location_in_loop( player_t* self, int location );
 float player_position_in_loop( player_t* self, int location );
+int player_is_location_off_tape( player_t* self, int location );
 
 // signals
 float player_step( player_t* self, float in );
