@@ -10,9 +10,10 @@ typedef struct{
     transport_t*  transport;
 
     int  tape_end;
-    bool loop;
+    int  loop;
     int  loop_start;
     int  loop_end;
+    int  loop_size; // memoized for speed
     int  o_loop_start; // ordered version of above
     int  o_loop_end; // ordered version of above
     int  location; // 'playhead' pointer to buffer
@@ -39,7 +40,7 @@ void player_recording( player_t* self, bool is_record );
 void player_rec_level( player_t* self, float rec_level );
 void player_pre_level( player_t* self, float pre_level );
 void player_head_order( player_t* self, bool play_before_erase );
-void player_loop( player_t* self, bool is_looping );
+void player_loop( player_t* self, int looping );
 void player_loop_start( player_t* self, int location );
 void player_loop_end( player_t* self, int location );
 
@@ -54,9 +55,14 @@ bool player_is_recording( player_t* self );
 float player_get_rec_level( player_t* self );
 float player_get_pre_level( player_t* self );
 bool player_is_head_order( player_t* self );
-bool player_is_looping( player_t* self );
+int player_get_looping( player_t* self );
 int player_get_loop_start( player_t* self );
 int player_get_loop_end( player_t* self );
+int player_get_loop_size( player_t* self );
+
+// queries
+bool player_is_location_in_loop( player_t* self, int location );
+float player_position_in_loop( player_t* self, int location );
 
 // signals
 float player_step( player_t* self, float in );

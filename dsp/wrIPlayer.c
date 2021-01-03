@@ -20,6 +20,7 @@ static int tape_clamp( player_t* self, int location );
 static bool player_is_going( player_t* self );
 static void queue_goto( player_t* self, int sample );
 static void order_loop_points( player_t* self );
+static void calc_loop_size( player_t* self );
 
 
 ///////////////////////////////
@@ -43,7 +44,7 @@ player_t* player_init( buffer_t* buffer )
     player_head_order( self, false );
     player_rec_level( self, 0.0 );
     player_pre_level( self, 1.0 );
-    player_loop(self, true);
+    player_loop(self, 0 );
     self->going = false;
     return self;
 }
@@ -122,16 +123,38 @@ void player_pre_level( player_t* self, float pre_level ){
 void player_head_order( player_t* self, bool play_before_erase ){
     self->play_before_erase = play_before_erase;
 }
-void player_loop( player_t* self, bool is_looping ){
-    self->loop = is_looping;
+// use ordering of loop points & direction of playback to determine loop style
+// allows looping in both directions
+// and loops that cross the 'join' of the tape loop.
+void player_loop( player_t* self, int looping ){
+    if( looping != 0 ){
+        if( transport_get_speed_live( self->transport ) >= 0.0 ){ // forward
+            if( self->loop_start == self->o_loop_start ){ // forward & ordered
+                self->loop = 1;
+            } else { // forward & out of order UNLOOP
+                self->loop = 2;
+            }
+        } else { // reverse
+            if( self->loop_start == self->o_loop_start ){ // reverse & ordered UNLOOP
+                self->loop = 2;
+            } else { // reverse & out of order LOOP
+                self->loop = 1;
+            }
+        }
+    } else {
+        self->loop = 0;
+    }
+    calc_loop_size(self);
 }
 void player_loop_start( player_t* self, int location ){
     self->loop_start = tape_clamp( self, location );
     order_loop_points(self);
+    calc_loop_size(self);
 }
 void player_loop_end( player_t* self, int location ){
     self->loop_end = tape_clamp( self, location );
     order_loop_points(self);
+    calc_loop_size(self);
 }
 
 
@@ -157,9 +180,56 @@ float player_get_rec_level( player_t* self ){
 float player_get_pre_level( player_t* self ){
     return ihead_fade_get_pre_level( self->head ); }
 bool player_is_head_order( player_t* self ){ return self->play_before_erase; }
-bool player_is_looping( player_t* self ){ return self->loop; }
+int player_get_looping( player_t* self ){ return self->loop; }
 int player_get_loop_start( player_t* self ){ return self->loop_start; }
 int player_get_loop_end( player_t* self ){ return self->loop_end; }
+int player_get_loop_size( player_t* self ){ return self->loop_size; }
+
+
+/////////////////////////////////////
+// queries
+
+bool player_is_location_in_loop( player_t* self, int location )
+{
+    bool inside = false;
+    switch( player_get_looping(self) ){
+        case 1: // LOOP
+            if( (location >= self->o_loop_start)
+             && (location <  self->o_loop_end) ){ inside = true; }
+            break;
+        case 2: // UNLOOP
+            if( (location >= self->o_loop_end
+             && (location <  self->o_loop_start)) ){ inside = true; }
+            break;
+        default: break;
+    }
+    return inside;
+}
+
+float player_position_in_loop( player_t* self, int location )
+{
+    int window = 0;
+    float pos = 0.0;
+    float size = player_get_loop_size(self);
+    switch( self->loop ){
+        case 1: // LOOP
+            window = location - self->o_loop_start;
+            pos = (float)window / size;
+            break;
+        case 2: // UNLOOP
+            if( location > self->o_loop_end ){ // first segment
+                window = location - self->o_loop_end;
+                pos = (float)window / size;
+            } else { // second segment
+                window = self->o_loop_start - location;
+                pos = (float)window / size;
+                pos = 1.0 - pos;
+            }
+            break;
+        default: pos = -1.0; // means not looping
+    }
+    return pos;
+}
 
 
 /////////////////////////////////////
@@ -180,24 +250,25 @@ static void edge_checks( player_t* self )
         int new_phase = ihead_fade_get_location( self->head );
         int jumpto = -1;
         // TODO would it be better to jump exactly? rather than re: LEAD_IN
-        // TODO self->loop could be a (-1,0,1) where -1 'jumps' over the loop (UNLOOP)
-            // in this case, need to add extra case
-// TEST THIS
         // Always test for tape edges before loop (incase of UNLOOP over the join)
         if( new_phase >= (self->tape_end - LEAD_IN) ){ jumpto = LEAD_IN; }
         else if( new_phase < LEAD_IN ){ jumpto = self->tape_end - LEAD_IN; }
-        else if( self->loop ){ // apply loop brace
+        else if( self->loop == 1 ){ // LOOP
             if( new_phase >= self->o_loop_end ){ jumpto = self->o_loop_start; }
             else if( new_phase < self->o_loop_start ){ jumpto = self->o_loop_end; }
+        } else if( self->loop == 2 ){ // UNLOOP
+            if( new_phase >  self->o_loop_start
+             && new_phase <= self->o_loop_end ){ // in no man's land
+                // choose destination by which is closer
+                int sdiff = new_phase - self->o_loop_start;
+                int ediff = self->o_loop_end - new_phase;
+                if( sdiff > ediff ){ // close to end
+                    jumpto = self->o_loop_start;
+                } else { // close to end
+                    jumpto = self->o_loop_end;
+                }
+            }
         }
-    // UNLOOP
-        /*
-        else if( self->loop == UNLOOP ){
-            // need to test against both the opposite edge, and the negative space
-            // eg: (start > np >= end) -> start
-            //     (end <= np < start) -> end
-        }
-        */
         if( jumpto >= 0 ){ // if there's a new jump, request it
             player_goto( self, jumpto );
         }
@@ -295,5 +366,22 @@ static void order_loop_points( player_t* self )
     } else { // reverse
         self->o_loop_start = self->loop_end;
         self->o_loop_end   = self->loop_start;
+    }
+}
+
+static void calc_loop_size( player_t* self )
+{
+    switch( self->loop ){
+        case 1: // LOOP
+            self->loop_size = self->o_loop_end - self->o_loop_start;
+            break;
+        case 2: // UNLOOP
+            self->loop_size = self->o_loop_start // 2nd segment
+                            + self->tape_end - self->o_loop_end // 1st segment
+                            - 2*LEAD_IN; // less wrap protection
+            break;
+        default: // OFF
+            self->loop_size = 0;
+            break;
     }
 }

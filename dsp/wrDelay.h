@@ -21,7 +21,7 @@ void delay_rate_mod( delay_t* self, float mod ); // add a linear offset to rate
 void delay_time( delay_t* self, float samples ); // set rate-relative-time in samples
 void delay_feedback( delay_t* self, float feedback );
 void delay_length( delay_t* self, float fraction ); // set subloop to a fraction of buffer time. ignores rate. captures the current playhead.
-void delay_subloop( delay_t* self, bool is_subloop ); // activates the subloop
+void delay_subloop( delay_t* self, int subloop ); // activates the subloop
 void delay_loop_to_here( delay_t* self, float length ); // set current playhead as loop end, and loop the previous length of samples
 void delay_freeze( delay_t* self, bool is_freeze ); // disable recording & erase
 void delay_lowpass( delay_t* self, float coeff );
@@ -30,7 +30,7 @@ float delay_get_rate( delay_t* self ); // (delay SR / playback SR)
 float delay_get_time( delay_t* self ); // time, adjusted for rate, in samples
 float delay_get_feedback( delay_t* self ); // (0,1)
 float delay_get_length( delay_t* self ); // portion of buffer currently active (0,1)
-bool delay_is_subloop( delay_t* self ); // playback is restricted to a sub-loop
+int delay_is_subloop( delay_t* self ); // playback is restricted to a sub-loop
 bool delay_is_freeze( delay_t* self ); // recording (and erase) is disabled
 float delay_get_cut( delay_t* self ); // current playhead location in samples
 float delay_get_lowpass( delay_t* self );

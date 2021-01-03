@@ -89,12 +89,12 @@ void delay_time( delay_t* self, float samples )
     float rate = delay_get_rate(self);
     float adjusted_s = samples * rate;
     if( adjusted_s < 0.0 ){
-        player_loop( self->play, false );
+        player_loop( self->play, 0 );
     } else if( adjusted_s == 0.0 ){
         printf("TODO set delay_time so that freq(0) == C3.\n");
     } else if( adjusted_s < 0.01 ){
         printf("TODO ignore because delay_time <10ms.\n");
-        //player_loop( self->play, true );
+        //player_loop( self->play, 1 );
         //player_loop_start( self->play, start );
         //player_loop_end( self->play, start + bdiv );
     } else if( adjusted_s < self->play->tape_end ){ // FIXME account for LEAD_IN
@@ -102,7 +102,7 @@ void delay_time( delay_t* self, float samples )
         // FIXME rework after loop points can wrap over the buffer end
         player_loop_start( self->play, 0 );
         player_loop_end( self->play, adjusted_s );
-        player_loop( self->play, true );
+        player_loop( self->play, 1 );
     } else {
         while( adjusted_s >= self->play->tape_end ){ // if too long, half sample rate
             rate *= 0.5;
@@ -112,7 +112,7 @@ void delay_time( delay_t* self, float samples )
             delay_rate( self, rate );
             player_loop_start( self->play, 0 );
             player_loop_end( self->play, adjusted_s );
-            player_loop( self->play, true );
+            player_loop( self->play, 1 );
         } else {
             printf("TODO ignoring delay_time as rate would be <(1/16).\n");
         }
@@ -134,9 +134,9 @@ void delay_feedback( delay_t* self, float feedback )
 void delay_length( delay_t* self, float fraction )
 {
     if( fraction >= 0.999 ){ // max time turns off looping
-        player_loop( self->play, false );
+        player_loop( self->play, 0 );
         return;
-    } else { player_loop( self->play, true ); }
+    } else { player_loop( self->play, 1 ); }
 // nb: using doubles for better timing accuracy
     double bdiv = self->play->tape_end * fraction;
     int whole_divs = (int)((double)player_get_goto( self->play ) / bdiv);
@@ -145,9 +145,9 @@ void delay_length( delay_t* self, float fraction )
     player_loop_end( self->play, start + bdiv );
 }
 
-void delay_subloop( delay_t* self, bool is_subloop )
+void delay_subloop( delay_t* self, int subloop )
 {
-    player_loop( self->play, is_subloop );
+    player_loop( self->play, subloop );
 }
 
 void delay_loop_to_here( delay_t* self, float length )
@@ -162,7 +162,7 @@ void delay_loop_to_here( delay_t* self, float length )
     }
     player_loop_start( self->play, new_start );
     player_loop_end( self->play, new_end );
-    player_loop( self->play, true );
+    player_loop( self->play, 1 );
 }
 
 void delay_freeze( delay_t* self, bool is_freeze )
@@ -196,9 +196,9 @@ float delay_get_feedback( delay_t* self )
     return player_get_pre_level( self->play );
 }
 
-bool delay_is_subloop( delay_t* self )
+int delay_is_subloop( delay_t* self )
 {
-    return player_is_looping( self->play );
+    return player_get_looping( self->play );
 }
 
 bool delay_is_freeze( delay_t* self )
