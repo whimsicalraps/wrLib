@@ -249,7 +249,6 @@ static void request_queued_goto( player_t* self )
 {
     int goto_dest = player_get_queued_goto( self );
     if( goto_dest != -1 ){ // check if a queued goto is ready
-        //printf("try queued\n");
         player_goto( self, goto_dest );
     }
 }

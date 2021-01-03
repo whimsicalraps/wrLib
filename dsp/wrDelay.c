@@ -11,7 +11,6 @@ static void mac_v( buffer_interface_t* self, float* io
                                     , int origin
                                     , int count
                                     , float coeff);
-static void apply_loop_brace( delay_t* self, float samples );
 
 
 //////////////////////////////////
@@ -106,7 +105,7 @@ void delay_time( delay_t* self, float samples )
         //player_loop_end( self->play, start + bdiv );
     } else if( adjusted_s < player_get_tape_length( self->play ) ){
         // apply length from 'here'
-        apply_loop_brace( self, adjusted_s );
+        delay_loop_to_here( self, adjusted_s );
     } else { // longer than 1x capable
         // half samples & rate until in range
         float tape_len = player_get_tape_length( self->play );
@@ -116,7 +115,7 @@ void delay_time( delay_t* self, float samples )
         }
         if( rate >= (1.0/16.0) ){
             delay_rate( self, rate );
-            apply_loop_brace( self, adjusted_s );
+            delay_loop_to_here( self, adjusted_s );
         } else {
             printf("TODO ignoring delay_time as rate would be <(1/16).\n");
         }
@@ -158,11 +157,10 @@ void delay_loop_to_here( delay_t* self, float length )
 {
     float new_end = player_get_goto( self->play );
     float new_start = new_end - length;
-    if( new_start < 0.0 ){
-        printf("FIXME: wrap around loop boundaries\n");
-        // for now, just pushing loop end point out
-        new_end -= new_start; // push out loop end (new_start is negative)
-        new_start = 0.0;
+    switch( player_is_location_off_tape( self->play, new_start ) ){
+        case 1: new_start -= player_get_tape_length( self->play ); break;
+        case -1: new_start += player_get_tape_length( self->play ); break;
+        default: break;
     }
     player_loop_start( self->play, new_start );
     player_loop_end( self->play, new_end );
@@ -295,25 +293,4 @@ static void mac_v( buffer_interface_t* self, float* io
         buffer[origin] = *s++ + LAST_SAMP;
         origin += dir;
     }
-}
-
-static void apply_loop_brace( delay_t* self, float samples )
-{
-    float new_start = player_get_goto( self->play );
-    player_loop_start( self->play, new_start );
-    float new_end = new_start + samples;
-    switch( player_is_location_off_tape( self->play, new_end ) ){
-        case 1: // past end
-            player_loop_end( self->play
-                , new_end - player_get_tape_length( self->play ));
-            break;
-        case -1: // before beginning
-            player_loop_end( self->play
-                , new_end + player_get_tape_length( self->play ));
-            break;
-        default:
-            player_loop_end( self->play, new_end );
-            break;
-    }
-    player_loop( self->play, 1 );
 }
