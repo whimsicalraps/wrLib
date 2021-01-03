@@ -58,8 +58,8 @@ bool player_is_head_order( player_t* self );
 int player_get_looping( player_t* self );
 int player_get_loop_start( player_t* self );
 int player_get_loop_end( player_t* self );
-int player_get_loop_size( player_t* self );
-int player_get_tape_length( player_t* self );
+float player_get_loop_size( player_t* self );
+float player_get_tape_length( player_t* self );
 
 // queries
 bool player_is_location_in_loop( player_t* self, int location );

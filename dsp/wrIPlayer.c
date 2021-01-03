@@ -183,8 +183,8 @@ bool player_is_head_order( player_t* self ){ return self->play_before_erase; }
 int player_get_looping( player_t* self ){ return self->loop; }
 int player_get_loop_start( player_t* self ){ return self->loop_start; }
 int player_get_loop_end( player_t* self ){ return self->loop_end; }
-int player_get_loop_size( player_t* self ){ return self->loop_size; }
-int player_get_tape_length( player_t* self ){
+float player_get_loop_size( player_t* self ){ return self->loop_size; }
+float player_get_tape_length( player_t* self ){
     return self->tape_end - 2*LEAD_IN;
 }
 
@@ -390,7 +390,7 @@ static void calc_loop_size( player_t* self )
                             - 2*LEAD_IN; // less wrap protection
             break;
         default: // OFF
-            self->loop_size = 0;
+            self->loop_size = player_get_tape_length( self );
             break;
     }
 }

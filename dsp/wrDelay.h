@@ -11,6 +11,8 @@ typedef struct{
     float     lpf;
 } delay_t;
 
+#define LOOP_MIN_LENGTH (64+4)
+
 delay_t* delay_init( int samples );
 void delay_deinit( delay_t* self );
 
@@ -25,6 +27,9 @@ void delay_subloop( delay_t* self, int subloop ); // activates the subloop
 void delay_loop_to_here( delay_t* self, float length ); // set current playhead as loop end, and loop the previous length of samples
 void delay_freeze( delay_t* self, bool is_freeze ); // disable recording & erase
 void delay_lowpass( delay_t* self, float coeff );
+void delay_ratio_length( delay_t* self, int n, int d );
+void delay_ratio_position( delay_t* self, int n, int d );
+void delay_ratio_cut( delay_t* self, int n, int d );
 
 float delay_get_rate( delay_t* self ); // (delay SR / playback SR)
 float delay_get_time( delay_t* self ); // time, adjusted for rate, in samples

@@ -6,7 +6,6 @@
 #include "wrBufferInterface.h"
 
 static void apply_rate( delay_t* self );
-static float get_loop_samples( delay_t* self );
 static void mac_v( buffer_interface_t* self, float* io
                                     , int origin
                                     , int count
@@ -29,14 +28,14 @@ delay_t* delay_init( int samples )
     self->play = player_init( self->buf );
     self->lpf = 0.0;
 
-    delay_subloop( self, true ); // FIXME should be false
+    delay_subloop( self, false ); // FIXME should be false
     player_playing( self->play, true );
     delay_freeze( self, false );
     player_rec_level( self->play, 1.0 );
 
     // params
     delay_rate( self, 1.0 );
-    delay_feedback( self, 0.9 );
+    delay_feedback( self, 0.8 );
 
     return self;
 }
@@ -98,11 +97,6 @@ void delay_time( delay_t* self, float samples )
         player_loop_start( self->play, 1000 ); // avoid LEADIN area
         player_loop_end( self->play, 1000 + C3_TIME );
         player_loop( self->play, 1 );
-    } else if( adjusted_s < 16 ){ // FIXME what should the limit be?
-        printf("TODO ignore because delay_time <16 samples.\n");
-        //player_loop( self->play, 1 );
-        //player_loop_start( self->play, start );
-        //player_loop_end( self->play, start + bdiv );
     } else if( adjusted_s < player_get_tape_length( self->play ) ){
         // apply length from 'here'
         delay_loop_to_here( self, adjusted_s );
@@ -139,13 +133,9 @@ void delay_length( delay_t* self, float fraction )
     if( fraction >= 0.999 ){ // max time turns off looping
         player_loop( self->play, 0 );
         return;
-    } else { player_loop( self->play, 1 ); }
-// nb: using doubles for better timing accuracy
-    double bdiv = self->play->tape_end * fraction;
-    int whole_divs = (int)((double)player_get_goto( self->play ) / bdiv);
-    double start = (double)whole_divs * bdiv;
-    player_loop_start( self->play, start );
-    player_loop_end( self->play, start + bdiv );
+    }
+    float new_len = fraction * player_get_tape_length( self->play );
+    delay_loop_to_here( self, new_len );
 }
 
 void delay_subloop( delay_t* self, int subloop )
@@ -155,6 +145,7 @@ void delay_subloop( delay_t* self, int subloop )
 
 void delay_loop_to_here( delay_t* self, float length )
 {
+    if( length < LOOP_MIN_LENGTH ){ return; }
     float new_end = player_get_goto( self->play );
     float new_start = new_end - length;
     switch( player_is_location_off_tape( self->play, new_start ) ){
@@ -177,7 +168,68 @@ void delay_lowpass( delay_t* self, float coeff )
     self->lpf = (coeff < 0.0) ? 0.0 : (coeff > 1.0) ? coeff = 1.0 : coeff;
 }
 
+// ratiometric loop+cut modifiers
+void delay_ratio_length( delay_t* self, int n, int d )
+{
+    if( d==0 ){ return; } // div-by-zero
+    if( n==d ){ player_loop(self->play, 0); return; } // full size
+    float tape_len = player_get_tape_length( self->play );
+    float loop_len = tape_len * (float)n / (float)d;
+    // push out the loop_end to match
+    float new_end = player_get_loop_start( self->play ) + loop_len;
+    switch( player_is_location_off_tape( self->play, new_end ) ){
+        case 1: new_end -= player_get_tape_length( self->play ); break;
+        case -1: new_end += player_get_tape_length( self->play ); break;
+        default: break;
+    }
+    player_loop_end( self->play, new_end );
+    player_loop( self->play, 1 );
+}
+void delay_ratio_position( delay_t* self, int n, int d )
+{
+    if( d==0 ){ return; } // div-by-zero
+    double tape_len = player_get_tape_length( self->play );
+    double segment  = tape_len / (double)d;
+    double position = segment * (double)n; // new start location
+    double lsize = player_get_loop_size( self->play );
+
+    double new_end = position + lsize;
+    switch( player_is_location_off_tape( self->play, new_end ) ){
+        case 1: new_end -= player_get_tape_length( self->play ); break;
+        case -1: new_end += player_get_tape_length( self->play ); break;
+        default: break;
+    }
+    player_loop_start( self->play, position );
+    player_loop_end( self->play, new_end );
+    printf("pos: %f %f\n",position,new_end);
+}
+void delay_ratio_cut( delay_t* self, int n, int d )
+{
+    if( d==0 ){ return; } // div-by-zero
+
+    if( player_get_looping( self->play ) ){ // slice up the loop
+        float lsize = player_get_loop_size( self->play );
+        float cut = lsize * (float)n / (float)d;
+        float start = player_get_loop_start( self->play );
+        float dest_cut = cut + start;
+        if( dest_cut > player_get_tape_length(self->play) ){ // wraps end of buffer
+            float rev_cut = lsize + cut - 1.0;
+            float end = player_get_loop_end( self->play );
+            player_goto( self->play, end-rev_cut);
+        } else { // plain loop
+            player_goto( self->play, dest_cut );
+        }
+    } else { // slice up the whole buffer
+        float tape_len = player_get_tape_length( self->play );
+        player_goto( self->play, tape_len * (float)n / (float)d );
+    }
+}
+
+
+
+//////////////////////////////////////////////
 // getters
+
 float delay_get_rate( delay_t* self )
 {
     return self->rate;
@@ -185,12 +237,12 @@ float delay_get_rate( delay_t* self )
 
 float delay_get_time( delay_t* self )
 {
-    return get_loop_samples(self) / delay_get_rate( self );
+    return player_get_loop_size(self->play) / delay_get_rate( self );
 }
 
 float delay_get_length( delay_t* self )
 {
-    return get_loop_samples(self) / self->play->tape_end;
+    return player_get_loop_size(self->play) / player_get_tape_length( self->play);
 }
 
 float delay_get_feedback( delay_t* self )
@@ -252,24 +304,6 @@ static void apply_rate( delay_t* self )
     player_speed( self->play, self->rate + self->mod );
 }
 
-static float get_loop_samples( delay_t* self )
-{
-    float t=0.0;
-    switch( player_get_looping( self->play ) ){
-        case 1: // regular loop
-            t = player_get_loop_end( self->play ) - player_get_loop_start( self->play );
-            break;
-        case 2: // unloop TODO
-            // FIXME handle outside loops (ie end before start)
-            t = player_get_loop_end( self->play ) - player_get_loop_start( self->play );
-            break;
-        default:
-            t = self->play->tape_end;
-            break;
-    }
-    return t;
-}
-
 static void mac_v( buffer_interface_t* self, float* io
                                     , int    origin
                                     , int    count
@@ -278,14 +312,20 @@ static void mac_v( buffer_interface_t* self, float* io
     static float LAST_SAMP = 0.0;
     delay_t* d = (delay_t*)self->userdata;
     float* s = io;
+
     int dir = (count>=0) ? 1 : -1;
     int abscount = (count>=0) ? count : -count;
     float* buffer = (float*)self->buf->b;
     for( int i=0; i<abscount; i++ ){
         // skipping bounds checks, instead relying on wrIPlayer's LEAD_IN protection
+    // FIXME UNLOOP breaks without these. can optimize!
+        while( origin < 0 ){ origin += self->buf->len; }
+        while( origin >= self->buf->len ){ origin -= self->buf->len; }
         float bs = buffer[origin];
 
     // lp1. but this does weird things with the xfade :/ sounds ok though!?
+    // sounds increasingly bad the shorter the time (greater % spent in xfade)
+    // really need to get it inside of the wrIHead.
         LAST_SAMP  = LAST_SAMP + d->lpf * (bs - LAST_SAMP);
         LAST_SAMP *= coeff; // feedback level
 
