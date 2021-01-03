@@ -82,6 +82,10 @@ void delay_rate_mod( delay_t* self, float mod )
     apply_rate( self );
 }
 
+#define DELAY_SAMPLERATE    ((float)48000.0) // FIXME!
+#define C3_HZ               ((float)261.63)  // hz
+#define C3_TIME             (DELAY_SAMPLERATE/C3_HZ) // samples
+
 // set buffer length at current rate, to match seconds
 // if time is not acheivable at current rate, mul/div rate by 2 to acheive it
 void delay_time( delay_t* self, float samples )
@@ -91,9 +95,11 @@ void delay_time( delay_t* self, float samples )
     if( adjusted_s < 0.0 ){
         player_loop( self->play, 0 );
     } else if( adjusted_s == 0.0 ){
-        printf("TODO set delay_time so that freq(0) == C3.\n");
-    } else if( adjusted_s < 0.01 ){
-        printf("TODO ignore because delay_time <10ms.\n");
+        player_loop_start( self->play, 1000 ); // avoid LEADIN area
+        player_loop_end( self->play, 1000 + C3_TIME );
+        player_loop( self->play, 1 );
+    } else if( adjusted_s < 16 ){ // FIXME what should the limit be?
+        printf("TODO ignore because delay_time <16 samples.\n");
         //player_loop( self->play, 1 );
         //player_loop_start( self->play, start );
         //player_loop_end( self->play, start + bdiv );
