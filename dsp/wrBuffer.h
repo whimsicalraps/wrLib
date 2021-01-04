@@ -3,16 +3,20 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-
 typedef struct buffer{
     int   len; // length of current data
     void* b;   // data buffer
     void* interface; // defined below
 } buffer_t;
 
+typedef enum{ Buf_Type_Float
+            , Buf_Type_S16
+} Buf_Type_t;
+
 typedef struct buffer_interface{
     // link to parent
     buffer_t* buf;
+    Buf_Type_t datatype; // type used by buffer_t
 
     // user-provided fnptrs for access
     float* (*peek_v)( struct buffer_interface*, float*, int, int);

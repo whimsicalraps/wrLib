@@ -21,10 +21,11 @@ delay_t* delay_init( int samples )
     if( !self ){ printf("couldn't malloc delay_t.\n"); return NULL; }
 
     // objects
-    buffer_interface_t* bi = buffer_interface_init(); // generic buffer i.f
+    buffer_interface_t* bi = buffer_interface_init(Buf_Type_S16); // generic buffer i.f
     bi->mac_v = &mac_v; // overload with our LPfiltering mac function
     bi->userdata = (void*)self; // give mac_v access to this object
-    self->buf = buffer_init( sizeof(float), samples, bi );
+    // self->buf = buffer_init( sizeof(float), samples, bi );
+    self->buf = buffer_init( sizeof(int16_t), samples, bi );
     self->play = player_init( self->buf );
     self->lpf = 0.0;
 
@@ -340,28 +341,41 @@ static void mac_v( buffer_interface_t* self, float* io
                                     , int    count
                                     , float  coeff )
 {
+    const float S16MAX = (float)0x7FFF;
+    const float iS16MAX = 1.0/(float)0x7FFF;
+
     static float LAST_SAMP = 0.0;
     delay_t* d = (delay_t*)self->userdata;
     float* s = io;
 
     int dir = (count>=0) ? 1 : -1;
     int abscount = (count>=0) ? count : -count;
-    float* buffer = (float*)self->buf->b;
+
+// Float version
+    // float* buffer = (float*)self->buf->b;
+// S16 version
+    int16_t* buffer = (int16_t*)self->buf->b;
+
     for( int i=0; i<abscount; i++ ){
         // skipping bounds checks, instead relying on wrIPlayer's LEAD_IN protection
     // FIXME UNLOOP breaks without these. can optimize!
         while( origin < 0 ){ origin += self->buf->len; }
         while( origin >= self->buf->len ){ origin -= self->buf->len; }
-        float bs = buffer[origin];
+
+        // READ
+        float dbuf = (float)buffer[origin] * iS16MAX; // TODO add dither?
 
     // lp1. but this does weird things with the xfade :/ sounds ok though!?
     // sounds increasingly bad the shorter the time (greater % spent in xfade)
     // really need to get it inside of the wrIHead.
-        LAST_SAMP  = LAST_SAMP + d->lpf * (bs - LAST_SAMP);
+        LAST_SAMP  = LAST_SAMP + d->lpf * (dbuf - LAST_SAMP);
         LAST_SAMP *= coeff; // feedback level
 
+        int ts = (*s++ + LAST_SAMP) * (float)S16MAX;
+        ts = (ts > 0x7FFF) ? 0x7FFF
+                : (ts < -0x8000) ? -0x8000 : ts;
+        buffer[origin] = (int16_t)ts;
 
-        buffer[origin] = *s++ + LAST_SAMP;
         origin += dir;
     }
 }

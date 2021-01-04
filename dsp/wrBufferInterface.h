@@ -8,7 +8,8 @@
 
 #include "wrBuffer.h"
 
-buffer_interface_t* buffer_interface_init( void );
+buffer_interface_t* buffer_interface_init( Buf_Type_t type );
+
 // Ownership of the buffer_interface passes to the buffer_t
 // only use `deinit()` if you haven't passed ownership to a buffer
 void buffer_interface_deinit( buffer_interface_t* self );
