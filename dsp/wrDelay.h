@@ -22,9 +22,10 @@ void delay_rate_v8( delay_t* self, float rate ); // as above with 2^rate scaling
 void delay_rate_mod( delay_t* self, float mod ); // add a linear offset to rate
 void delay_time( delay_t* self, float samples ); // set rate-relative-time in samples
 void delay_feedback( delay_t* self, float feedback );
-void delay_length( delay_t* self, float fraction ); // set subloop to a fraction of buffer time. ignores rate. captures the current playhead.
+//void delay_length( delay_t* self, float fraction ); // set subloop to a fraction of buffer time. ignores rate. captures the current playhead.
+void delay_length_mul( delay_t* self, float mul ); // modify subloop to a fraction of current time.
 void delay_subloop( delay_t* self, int subloop ); // activates the subloop
-void delay_loop_to_here( delay_t* self, float length ); // set current playhead as loop end, and loop the previous length of samples
+void delay_loop_to_here( delay_t* self, phase_t length ); // set current playhead as loop end, and loop the previous length of samples
 void delay_freeze( delay_t* self, bool is_freeze ); // disable recording & erase
 void delay_lowpass( delay_t* self, float coeff );
 void delay_ratio_length( delay_t* self, int n, int d );

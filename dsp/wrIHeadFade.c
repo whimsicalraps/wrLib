@@ -97,7 +97,7 @@ void ihead_fade_align( ihead_fade_t* self, bool is_forward ){
 //////////////////////////////////
 // params: getters
 
-int ihead_fade_get_location( ihead_fade_t* self ){
+phase_t ihead_fade_get_location( ihead_fade_t* self ){
     return ihead_get_location( self->head[self->fade_active_head] );
 }
 bool ihead_fade_is_recording( ihead_fade_t* self ){

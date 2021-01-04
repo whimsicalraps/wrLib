@@ -78,7 +78,7 @@ void ihead_align( ihead_t* self, bool is_forward ){
 bool ihead_is_recording( ihead_t* self ){ return self->recording; }
 float ihead_get_rec_level( ihead_t* self ){ return self->rec_level; }
 float ihead_get_pre_level( ihead_t* self ){ return self->pre_level; }
-int ihead_get_location( ihead_t* self ){ return self->rphase.i; }
+phase_t ihead_get_location( ihead_t* self ){ return self->rphase; }
 
 
 ///////////////////////////////////////

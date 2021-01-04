@@ -39,7 +39,7 @@ void ihead_fade_pre_level( ihead_fade_t* self, float level );
 
 ////////////////////////////////////////
 // params: getters
-int ihead_fade_get_location( ihead_fade_t* self );
+phase_t ihead_fade_get_location( ihead_fade_t* self );
 bool ihead_fade_is_recording( ihead_fade_t* self );
 float ihead_fade_get_rec_level( ihead_fade_t* self );
 float ihead_fade_get_pre_level( ihead_fade_t* self );

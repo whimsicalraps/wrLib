@@ -16,9 +16,9 @@
 ///////////////////////////////
 // private declarations
 
-static int tape_clamp( player_t* self, int location );
+static phase_t tape_clamp( player_t* self, phase_t location );
 static bool player_is_going( player_t* self );
-static void queue_goto( player_t* self, int sample );
+static void queue_goto( player_t* self, phase_t sample );
 static void order_loop_points( player_t* self );
 static void calc_loop_size( player_t* self );
 
@@ -64,9 +64,12 @@ player_t* player_load( player_t* self, buffer_t* buffer )
 {
     self->buf = buffer;
     if(self->buf){
-        self->tape_end = buffer->len;
-        player_goto( self, 0 );
-        player_loop_start( self, 0 );
+        self->tape_end = phase_new( buffer->len, 0.0 );
+        self->tape_end_lead = phase_new( buffer->len - LEAD_IN, 0.0 );
+        self->tape_size = phase_new( buffer->len - 2*LEAD_IN, 0.0 );
+        self->tape_start_lead = phase_new( LEAD_IN, 0.0 );
+        player_goto( self, phase_zero() );
+        player_loop_start( self, phase_zero() );
         player_loop_end( self, self->tape_end );
     }
     return self;
@@ -77,16 +80,20 @@ void player_playing( player_t* self, bool is_play )
     transport_active( self->transport, is_play, transport_motor_standard );
 }
 
-void player_goto( player_t* self, int sample )
+void player_goto_int( player_t* self, int sample )
+{
+    player_goto( self, (phase_t){ .i = sample, .f = 0.0 } );
+}
+void player_goto( player_t* self, phase_t sample )
 {
     if( self->buf ){
-        if( buffer_request( self->buf, sample ) ){
+        if( buffer_request( self->buf, sample.i ) ){
             ihead_fade_jumpto( self->head
                              , self->buf
-                             , sample
+                             , sample.i
                              , (transport_get_speed_live( self->transport ) >= 0.0)
                              );
-            self->queued_location = -1;
+            self->queued_location.i = -1; // inactive
             self->going = false;
         } else {
             self->going = true;
@@ -129,13 +136,13 @@ void player_head_order( player_t* self, bool play_before_erase ){
 void player_loop( player_t* self, int looping ){
     if( looping != 0 ){
         if( transport_get_speed_live( self->transport ) >= 0.0 ){ // forward
-            if( self->loop_start == self->o_loop_start ){ // forward & ordered
+            if( phase_eq( self->loop_start, self->o_loop_start ) ){ // forward & ordered
                 self->loop = 1;
             } else { // forward & out of order UNLOOP
                 self->loop = 2;
             }
         } else { // reverse
-            if( self->loop_start == self->o_loop_start ){ // reverse & ordered UNLOOP
+            if( phase_eq( self->loop_start, self->o_loop_start ) ){ // reverse & ordered UNLOOP
                 self->loop = 2;
             } else { // reverse & out of order LOOP
                 self->loop = 1;
@@ -146,12 +153,19 @@ void player_loop( player_t* self, int looping ){
     }
     calc_loop_size(self);
 }
-void player_loop_start( player_t* self, int location ){
+// FIXME temporary helpers for phase_t versions
+void player_loop_start_int( player_t* self, int location ){
+    player_loop_start( self, phase_new(location,0.0) );
+}
+void player_loop_end_int( player_t* self, int location ){
+    player_loop_end( self, phase_new(location,0.0) );
+}
+void player_loop_start( player_t* self, phase_t location ){
     self->loop_start = tape_clamp( self, location );
     order_loop_points(self);
     calc_loop_size(self);
 }
-void player_loop_end( player_t* self, int location ){
+void player_loop_end( player_t* self, phase_t location ){
     self->loop_end = tape_clamp( self, location );
     order_loop_points(self);
     calc_loop_size(self);
@@ -163,9 +177,9 @@ void player_loop_end( player_t* self, int location ){
 
 bool player_is_playing( player_t* self ){
     return transport_is_active( self->transport ); }
-int player_get_goto( player_t* self ){
+phase_t player_get_goto( player_t* self ){
     return ihead_fade_get_location( self->head ); }
-int player_get_queued_goto( player_t* self ){
+phase_t player_get_queued_goto( player_t* self ){
     return self->queued_location; }
 float player_get_speed( player_t* self ){
     return transport_get_speed( self->transport ); }
@@ -181,49 +195,56 @@ float player_get_pre_level( player_t* self ){
     return ihead_fade_get_pre_level( self->head ); }
 bool player_is_head_order( player_t* self ){ return self->play_before_erase; }
 int player_get_looping( player_t* self ){ return self->loop; }
-int player_get_loop_start( player_t* self ){ return self->loop_start; }
-int player_get_loop_end( player_t* self ){ return self->loop_end; }
-float player_get_loop_size( player_t* self ){ return self->loop_size; }
-float player_get_tape_length( player_t* self ){
-    return self->tape_end - 2*LEAD_IN;
+int player_get_loop_start_int( player_t* self ){ return self->loop_start.i; }
+int player_get_loop_end_int( player_t* self ){ return self->loop_end.i; }
+phase_t player_get_loop_start( player_t* self ){ return self->loop_start; }
+phase_t player_get_loop_end( player_t* self ){ return self->loop_end; }
+int player_get_loop_size_int( player_t* self ){ return self->loop_size.i; }
+phase_t player_get_loop_size( player_t* self ){ return self->loop_size; }
+int player_get_tape_length_int( player_t* self ){
+    return self->tape_size.i;
+}
+phase_t player_get_tape_length( player_t* self ){
+    return self->tape_size;
 }
 
 /////////////////////////////////////
 // queries
 
-bool player_is_location_in_loop( player_t* self, int location )
+bool player_is_location_in_loop( player_t* self, phase_t location )
 {
     bool inside = false;
     switch( player_get_looping(self) ){
         case 1: // LOOP
-            if( (location >= self->o_loop_start)
-             && (location <  self->o_loop_end) ){ inside = true; }
+            if( phase_gte( location, self->o_loop_start )
+             && phase_lt( location, self->o_loop_end ) ){ inside = true; }
             break;
         case 2: // UNLOOP
-            if( (location >= self->o_loop_end
-             && (location <  self->o_loop_start)) ){ inside = true; }
+            if( phase_gte( location, self->o_loop_end )
+             && phase_lt( location, self->o_loop_start) ){ inside = true; }
             break;
         default: break;
     }
     return inside;
 }
 
+// integer precision ok!
 float player_position_in_loop( player_t* self, int location )
 {
     int window = 0;
     float pos = 0.0;
-    float size = player_get_loop_size(self);
+    float size = (float)player_get_loop_size(self).i;
     switch( self->loop ){
         case 1: // LOOP
-            window = location - self->o_loop_start;
+            window = location - self->o_loop_start.i;
             pos = (float)window / size;
             break;
         case 2: // UNLOOP
-            if( location > self->o_loop_end ){ // first segment
-                window = location - self->o_loop_end;
+            if( location > self->o_loop_end.i ){ // first segment
+                window = location - self->o_loop_end.i;
                 pos = (float)window / size;
             } else { // second segment
-                window = self->o_loop_start - location;
+                window = self->o_loop_start.i - location;
                 pos = (float)window / size;
                 pos = 1.0 - pos;
             }
@@ -233,11 +254,11 @@ float player_position_in_loop( player_t* self, int location )
     return pos;
 }
 
-int player_is_location_off_tape( player_t* self, int location )
+int player_is_location_off_tape( player_t* self, phase_t location )
 {
     int inside = false;
-    if( location < LEAD_IN ){ inside = -1; }
-    if( location > (self->tape_end - LEAD_IN) ){ inside = 1; }
+    if( phase_lt( location, self->tape_start_lead ) ){ inside = -1; }
+    if( phase_gt( location, self->tape_end_lead) ){ inside = 1; }
     return inside;
 }
 
@@ -247,8 +268,8 @@ int player_is_location_off_tape( player_t* self, int location )
 
 static void request_queued_goto( player_t* self )
 {
-    int goto_dest = player_get_queued_goto( self );
-    if( goto_dest != -1 ){ // check if a queued goto is ready
+    phase_t goto_dest = player_get_queued_goto( self );
+    if( goto_dest.i != -1 ){ // check if a queued goto is ready
         player_goto( self, goto_dest );
     }
 }
@@ -256,29 +277,32 @@ static void request_queued_goto( player_t* self )
 static void edge_checks( player_t* self )
 {
     if( !player_is_going( self ) ){ // only edge check if there isn't a queued jump
-        int new_phase = ihead_fade_get_location( self->head );
-        int jumpto = -1;
+        phase_t new_phase = ihead_fade_get_location( self->head );
+        phase_t pend = self->tape_end_lead;
+        phase_t pstart = self->tape_start_lead;
+        phase_t jumpto = phase_null();
         // TODO would it be better to jump exactly? rather than re: LEAD_IN
         // Always test for tape edges before loop (incase of UNLOOP over the join)
-        if( new_phase >= (self->tape_end - LEAD_IN) ){ jumpto = LEAD_IN; }
-        else if( new_phase < LEAD_IN ){ jumpto = self->tape_end - LEAD_IN; }
+
+        if( phase_gte( new_phase, pend ) ){ jumpto = pstart; }
+        else if( phase_lt( new_phase, pstart ) ){ jumpto = pend; }
         else if( self->loop == 1 ){ // LOOP
-            if( new_phase >= self->o_loop_end ){ jumpto = self->o_loop_start; }
-            else if( new_phase < self->o_loop_start ){ jumpto = self->o_loop_end; }
+            if( phase_gte( new_phase, self->o_loop_end ) ){ jumpto = self->o_loop_start; }
+            else if( phase_lt( new_phase, self->o_loop_start ) ){ jumpto = self->o_loop_end; }
         } else if( self->loop == 2 ){ // UNLOOP
-            if( new_phase >  self->o_loop_start
-             && new_phase <= self->o_loop_end ){ // in no man's land
+            if( phase_gt( new_phase, self->o_loop_start )
+             && phase_lte( new_phase, self->o_loop_end ) ){ // in no man's land
                 // choose destination by which is closer
-                int sdiff = new_phase - self->o_loop_start;
-                int ediff = self->o_loop_end - new_phase;
-                if( sdiff > ediff ){ // close to end
+                phase_t sdiff = phase_sub( new_phase, self->o_loop_start );
+                phase_t ediff = phase_sub( self->o_loop_end, new_phase );
+                if( phase_gt( sdiff, ediff ) ){ // close to end
                     jumpto = self->o_loop_start;
-                } else { // close to end
+                } else { // close to start
                     jumpto = self->o_loop_end;
                 }
             }
         }
-        if( jumpto >= 0 ){ // if there's a new jump, request it
+        if( !phase_eq( jumpto, phase_null() ) ){ // if there's a new jump, request it
             player_goto( self, jumpto );
         }
     }
@@ -352,14 +376,17 @@ float* player_step_v( player_t* self, float* io, int size )
 //////////////////////////////////
 // private funcs
 
-static int tape_clamp( player_t* self, int location ){
-    if( location < LEAD_IN ){ location = LEAD_IN; }
-    if( location > (self->tape_end - LEAD_IN) ){ location = self->tape_end - LEAD_IN; }
+static phase_t tape_clamp( player_t* self, phase_t location ){
+    if( location.i < LEAD_IN ){ location = phase_new(LEAD_IN, 0.0); }
+    phase_t end = self->tape_end_lead;
+    if( phase_gt( location, end ) ){
+        return end;
+    }
     return location;
 }
 
-static void queue_goto( player_t* self, int sample ){
-    if( sample != self->queued_location ){
+static void queue_goto( player_t* self, phase_t sample ){
+    if( sample.i != self->queued_location.i ){
         self->queued_location = sample;
     }
 }
@@ -369,7 +396,7 @@ static bool player_is_going( player_t* self ){ return self->going; }
 static void order_loop_points( player_t* self )
 {
     // TODO handle UNLOOP version where we jump over it
-    if( self->loop_start < self->loop_end ){ // forward
+    if( phase_lt( self->loop_start, self->loop_end ) ){ // forward
         self->o_loop_start = self->loop_start;
         self->o_loop_end   = self->loop_end;
     } else { // reverse
@@ -382,12 +409,15 @@ static void calc_loop_size( player_t* self )
 {
     switch( self->loop ){
         case 1: // LOOP
-            self->loop_size = self->o_loop_end - self->o_loop_start;
+            self->loop_size = phase_sub( self->o_loop_end, self->o_loop_start );
             break;
         case 2: // UNLOOP
-            self->loop_size = self->o_loop_start // 2nd segment
-                            + self->tape_end - self->o_loop_end // 1st segment
-                            - 2*LEAD_IN; // less wrap protection
+            self->loop_size = phase_sub( phase_add( self->o_loop_start // 2nd segment
+                                                  , phase_sub( self->tape_end
+                                                             , self->o_loop_end ) // 1st segment
+                                                  )
+                                       , phase_new( 2*LEAD_IN, 0.0 ) // less wrap protection
+                                       );
             break;
         default: // OFF
             self->loop_size = player_get_tape_length( self );

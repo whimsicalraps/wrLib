@@ -1,14 +1,10 @@
 #pragma once
 
+#include "wrPhase.h" // phase_t and ops
 #include "wrBuffer.h"
 #include "wrFilter.h"
 
 #define OUT_BUF_LEN 64 // defines maximum speed
-
-typedef struct{
-    int   i;
-    float f;
-} phase_t;
 
 typedef struct{
     // WRITE / ERASE HEAD
@@ -44,7 +40,7 @@ void ihead_align( ihead_t* self, bool is_forward );
 
 ////////////////////////////////////////
 // params: getters
-int ihead_get_location( ihead_t* self );
+phase_t ihead_get_location( ihead_t* self );
 bool ihead_is_recording( ihead_t* self );
 float ihead_get_rec_level( ihead_t* self );
 float ihead_get_pre_level( ihead_t* self );

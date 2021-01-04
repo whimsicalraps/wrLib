@@ -89,25 +89,26 @@ void delay_rate_mod( delay_t* self, float mod )
 // if time is not acheivable at current rate, mul/div rate by 2 to acheive it
 void delay_time( delay_t* self, float samples )
 {
-    float rate = delay_get_rate(self);
-    float adjusted_s = samples * rate;
-    if( adjusted_s < 0.0 ){
+    double rate = delay_get_rate(self);
+    phase_t adjusted_s = phase_mul_d( phase_from_double(samples)
+                                    , rate );
+    if( phase_lt( adjusted_s, phase_zero() ) ){
         player_loop( self->play, 0 );
-    } else if( adjusted_s == 0.0 ){
-        player_loop_start( self->play, 1000 ); // avoid LEADIN area
-        player_loop_end( self->play, 1000 + C3_TIME );
+    } else if( phase_ez( adjusted_s ) ){
+        player_loop_start( self->play, phase_from_double(1000.0) ); // avoid LEADIN area
+        player_loop_end( self->play, phase_from_double(1000.0 + C3_TIME) );
         player_loop( self->play, 1 );
-    } else if( adjusted_s < player_get_tape_length( self->play ) ){
-        // apply length from 'here'
+    } else if( phase_lt( adjusted_s
+                       , player_get_tape_length( self->play ) ) ){
         delay_loop_to_here( self, adjusted_s );
     } else { // longer than 1x capable
         // half samples & rate until in range
-        float tape_len = player_get_tape_length( self->play );
-        while( adjusted_s >= tape_len ){
-            rate *= 0.5;
-            adjusted_s = samples * rate;
+        phase_t tape_len = player_get_tape_length( self->play );
+        while( phase_gte( adjusted_s, tape_len ) ){
+            rate *= (double)0.5;
+            adjusted_s = phase_mul_d( adjusted_s, 0.5 );
         }
-        if( rate >= (1.0/16.0) ){
+        if( rate >= (double)(1.0/16.0) ){
             delay_rate( self, rate );
             delay_loop_to_here( self, adjusted_s );
         } else {
@@ -128,14 +129,36 @@ void delay_feedback( delay_t* self, float feedback )
 // Attempts to ensure the newest material stays in the loop brace
 //  1. Sub-divide the total time into multiples of 'fraction'
 //  2. Loop the 'fraction' that contains the current playhead
-void delay_length( delay_t* self, float fraction )
+// void delay_length( delay_t* self, float fraction )
+// {
+//     if( fraction >= 0.999 ){ // max time turns off looping
+//         player_loop( self->play, 0 );
+//         return;
+//     }
+//     float new_len = fraction * player_get_tape_length( self->play );
+//     delay_loop_to_here( self, new_len );
+// }
+
+// multiply the current loop length by *mul*
+void delay_length_mul( delay_t* self, float mul )
 {
-    if( fraction >= 0.999 ){ // max time turns off looping
-        player_loop( self->play, 0 );
-        return;
+    if( !player_get_looping( self->play ) ){
+        if( mul < 1.0 ){
+            // activate loop & set as a fraction of the whole
+            phase_t tape_len = player_get_tape_length( self->play );
+            phase_t new_len = phase_mul_d( tape_len, mul );
+            delay_loop_to_here( self, new_len );
+        }
+    } else {
+        phase_t loop_len = player_get_loop_size( self->play );
+        phase_t new_len = phase_mul_d( loop_len, mul );
+        if( phase_gte( new_len, player_get_tape_length(self->play) ) ){
+            printf("loop_mul goes past 1.0\n");
+            player_loop( self->play, 0 ); // loop longer than available time
+        } else {
+            delay_loop_to_here( self, new_len );
+        }
     }
-    float new_len = fraction * player_get_tape_length( self->play );
-    delay_loop_to_here( self, new_len );
 }
 
 void delay_subloop( delay_t* self, int subloop )
@@ -143,14 +166,17 @@ void delay_subloop( delay_t* self, int subloop )
     player_loop( self->play, subloop );
 }
 
-void delay_loop_to_here( delay_t* self, float length )
+void delay_loop_to_here( delay_t* self, phase_t length )
 {
-    if( length < LOOP_MIN_LENGTH ){ return; }
-    float new_end = player_get_goto( self->play );
-    float new_start = new_end - length;
+    if( phase_lt( length, phase_new(LOOP_MIN_LENGTH,0.0) ) ){ return; }
+    phase_t new_end = player_get_goto( self->play );
+    phase_t new_start = phase_sub( new_end, length );
+
     switch( player_is_location_off_tape( self->play, new_start ) ){
-        case 1: new_start -= player_get_tape_length( self->play ); break;
-        case -1: new_start += player_get_tape_length( self->play ); break;
+        case  1: new_start = phase_sub( new_start
+                                , player_get_tape_length( self->play ) ); break;
+        case -1: new_start = phase_add( new_start
+                                , player_get_tape_length( self->play ) ); break;
         default: break;
     }
     player_loop_start( self->play, new_start );
@@ -173,13 +199,16 @@ void delay_ratio_length( delay_t* self, int n, int d )
 {
     if( d==0 ){ return; } // div-by-zero
     if( n==d ){ player_loop(self->play, 0); return; } // full size
-    float tape_len = player_get_tape_length( self->play );
-    float loop_len = tape_len * (float)n / (float)d;
+    phase_t tape_len = player_get_tape_length( self->play );
+    phase_t loop_len = phase_mul_d( tape_len, (float)n / (float)d );
     // push out the loop_end to match
-    float new_end = player_get_loop_start( self->play ) + loop_len;
+    phase_t new_end = phase_add( player_get_loop_start( self->play )
+                               , loop_len );
     switch( player_is_location_off_tape( self->play, new_end ) ){
-        case 1: new_end -= player_get_tape_length( self->play ); break;
-        case -1: new_end += player_get_tape_length( self->play ); break;
+        case  1: new_end = phase_sub( new_end
+                            , player_get_tape_length( self->play ) ); break;
+        case -1: new_end = phase_add( new_end
+                            , player_get_tape_length( self->play ) ); break;
         default: break;
     }
     player_loop_end( self->play, new_end );
@@ -188,40 +217,42 @@ void delay_ratio_length( delay_t* self, int n, int d )
 void delay_ratio_position( delay_t* self, int n, int d )
 {
     if( d==0 ){ return; } // div-by-zero
-    double tape_len = player_get_tape_length( self->play );
-    double segment  = tape_len / (double)d;
-    double position = segment * (double)n; // new start location
-    double lsize = player_get_loop_size( self->play );
+    //phase_t tape_len = phase_new( player_get_tape_length( self->play ), 0.0);
+    phase_t tape_len = player_get_tape_length( self->play );
+    phase_t segment = phase_mul_d( tape_len, (double)1.0/(double)d );
+    phase_t position = phase_mul_d( segment, (double)n ); // new start location
+    phase_t lsize = player_get_loop_size( self->play );
 
-    double new_end = position + lsize;
+    phase_t new_end = phase_add( position, lsize );
     switch( player_is_location_off_tape( self->play, new_end ) ){
-        case 1: new_end -= player_get_tape_length( self->play ); break;
-        case -1: new_end += player_get_tape_length( self->play ); break;
+        case  1: new_end = phase_sub( new_end
+                            , player_get_tape_length( self->play ) ); break;
+        case -1: new_end = phase_add( new_end
+                            , player_get_tape_length( self->play ) ); break;
         default: break;
     }
     player_loop_start( self->play, position );
     player_loop_end( self->play, new_end );
-    printf("pos: %f %f\n",position,new_end);
 }
 void delay_ratio_cut( delay_t* self, int n, int d )
 {
     if( d==0 ){ return; } // div-by-zero
 
     if( player_get_looping( self->play ) ){ // slice up the loop
-        float lsize = player_get_loop_size( self->play );
-        float cut = lsize * (float)n / (float)d;
-        float start = player_get_loop_start( self->play );
-        float dest_cut = cut + start;
-        if( dest_cut > player_get_tape_length(self->play) ){ // wraps end of buffer
-            float rev_cut = lsize + cut - 1.0;
-            float end = player_get_loop_end( self->play );
-            player_goto( self->play, end-rev_cut);
+        phase_t lsize = player_get_loop_size( self->play );
+        phase_t cut = phase_mul_d( lsize, (double)n/(double)d );
+        phase_t start = player_get_loop_start( self->play );
+        phase_t dest_cut = phase_sub( cut, start );
+        if( phase_gt( dest_cut, player_get_tape_length(self->play) ) ){ // wraps end of buffer
+            phase_t rev_cut = phase_add( lsize, phase_sub( cut, phase_new(1,0.0)));
+            phase_t end = player_get_loop_end( self->play );
+            player_goto( self->play, phase_sub( end, rev_cut ) );
         } else { // plain loop
             player_goto( self->play, dest_cut );
         }
     } else { // slice up the whole buffer
-        float tape_len = player_get_tape_length( self->play );
-        player_goto( self->play, tape_len * (float)n / (float)d );
+        phase_t tape_len = player_get_tape_length( self->play );
+        player_goto( self->play, phase_mul_d( tape_len, (double)n/(double)d ) );
     }
 }
 
@@ -237,12 +268,12 @@ float delay_get_rate( delay_t* self )
 
 float delay_get_time( delay_t* self )
 {
-    return player_get_loop_size(self->play) / delay_get_rate( self );
+    return player_get_loop_size_int(self->play) / delay_get_rate( self );
 }
 
 float delay_get_length( delay_t* self )
 {
-    return player_get_loop_size(self->play) / player_get_tape_length( self->play);
+    return (float)player_get_loop_size_int(self->play) / (float)player_get_tape_length_int( self->play);
 }
 
 float delay_get_feedback( delay_t* self )
@@ -262,7 +293,7 @@ bool delay_is_freeze( delay_t* self )
 
 float delay_get_cut( delay_t* self )
 {
-    return player_get_goto( self->play );
+    return player_get_goto( self->play ).i;
 }
 
 float delay_get_lowpass( delay_t* self )
