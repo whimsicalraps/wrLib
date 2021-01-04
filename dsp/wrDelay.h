@@ -13,7 +13,7 @@ typedef struct{
 
 #define LOOP_MIN_LENGTH (64+4)
 
-delay_t* delay_init( int samples );
+delay_t* delay_init( Buf_Type_t type, int samples );
 void delay_deinit( delay_t* self );
 
 void delay_rate( delay_t* self, float rate ); // set delay sample-rate re: input SR
