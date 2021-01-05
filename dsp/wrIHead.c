@@ -101,9 +101,9 @@ void ihead_pre_filter_set( ihead_t* self, float set ){
         }
     }
 }
-void ihead_jumpto( ihead_t* self, buffer_t* buf, int phase, bool is_forward ){
-    self->write_ix = (is_forward) ? phase + REC_OFFSET : phase - REC_OFFSET;
-    self->rphase = phase_new(phase, 0.0);
+void ihead_jumpto( ihead_t* self, buffer_t* buf, phase_t phase, bool is_forward ){
+    self->write_ix = (is_forward) ? phase.i + REC_OFFSET : phase.i - REC_OFFSET;
+    self->rphase = phase;
 }
 void ihead_align( ihead_t* self, bool is_forward ){
     self->write_ix = (is_forward) ? self->rphase.i + REC_OFFSET

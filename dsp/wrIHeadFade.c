@@ -93,7 +93,7 @@ void ihead_fade_pre_filter( ihead_fade_t* self, float coeff )
     ihead_pre_filter( self->head[1], coeff );
 }
 
-void ihead_fade_jumpto( ihead_fade_t* self, buffer_t* buf, int phase, bool is_forward ){
+void ihead_fade_jumpto( ihead_fade_t* self, buffer_t* buf, phase_t phase, bool is_forward ){
     self->fade_active_head ^= 1; // flip active head
     ihead_jumpto( self->head[self->fade_active_head], buf, phase, is_forward );
     // initiate the xfade

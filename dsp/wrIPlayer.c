@@ -90,10 +90,10 @@ void player_goto( player_t* self, phase_t sample )
         if( buffer_request( self->buf, sample.i ) ){
             ihead_fade_jumpto( self->head
                              , self->buf
-                             , sample.i
+                             , sample
                              , (transport_get_speed_live( self->transport ) >= 0.0)
                              );
-            self->queued_location.i = -1; // inactive
+            self->queued_location = phase_null();
             self->going = false;
         } else {
             self->going = true;

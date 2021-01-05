@@ -38,7 +38,7 @@ void ihead_rec_level( ihead_t* self, float level );
 void ihead_pre_level( ihead_t* self, float level );
 void ihead_pre_filter( ihead_t* self, float coeff );
 void ihead_pre_filter_set( ihead_t* self, float set ); // force the filter's current output
-void ihead_jumpto( ihead_t* self, buffer_t* buf, int phase, bool is_forward );
+void ihead_jumpto( ihead_t* self, buffer_t* buf, phase_t phase, bool is_forward );
 void ihead_align( ihead_t* self, bool is_forward );
 
 ////////////////////////////////////////
