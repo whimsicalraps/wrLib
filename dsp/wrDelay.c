@@ -41,6 +41,7 @@ delay_t* delay_init( Buf_Type_t type, int samples )
     player_playing( self->play, true );
     delay_freeze( self, false );
     player_rec_level( self->play, 1.0 );
+    player_head_order( self->play, true );
 
     // params
     delay_rate( self, 1.0 );
