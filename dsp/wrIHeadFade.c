@@ -18,15 +18,15 @@ static void update_poke_slews( ihead_fade_t* self );
 ///////////////////////////////
 // setup
 
-ihead_fade_t* ihead_fade_init( void )
+ihead_fade_t* ihead_fade_init( Buf_Map_Type_t map_type )
 {
     ihead_fade_t* self = malloc( sizeof( ihead_fade_t ) );
     if( !self ){ printf("ihead_fade_init failed malloc\n"); return NULL; }
 
     self->fade_length = 0.01; // 10ms
 
-    self->head[0] = ihead_init();
-    self->head[1] = ihead_init();
+    self->head[0] = ihead_init( map_type );
+    self->head[1] = ihead_init( map_type );
 
     self->fade_active_head = 0;
     self->fade_phase = 0.0;
@@ -38,6 +38,7 @@ ihead_fade_t* ihead_fade_init( void )
     lp1_set_coeff( self->pre_slew, 0.01 ); // TODO configure slew time
     lp1_set_out( self->pre_slew, 1.0 );
     lp1_set_dest( self->pre_slew, 1.0 );
+    self->fade_pre_filter = 0.97; // TODO apply a lowpass filter
     self->fade_recording_dest = false;
 
     return self;
@@ -66,6 +67,13 @@ void ihead_fade_recording( ihead_fade_t* self, bool is_recording )
     }
 }
 
+void ihead_fade_xfade_ms( ihead_fade_t* self, float time )
+{
+    if( time >= 0.0 ){
+        self->fade_length = time;
+    }
+}
+
 void ihead_fade_rec_level( ihead_fade_t* self, float level )
 {
     self->fade_rec_level = level;
@@ -78,6 +86,13 @@ void ihead_fade_pre_level( ihead_fade_t* self, float level )
     ihead_fade_slew_heads( self );
 }
 
+void ihead_fade_pre_filter( ihead_fade_t* self, float coeff )
+{
+    self->fade_pre_filter = coeff;
+    ihead_pre_filter( self->head[0], coeff );
+    ihead_pre_filter( self->head[1], coeff );
+}
+
 void ihead_fade_jumpto( ihead_fade_t* self, buffer_t* buf, int phase, bool is_forward ){
     self->fade_active_head ^= 1; // flip active head
     ihead_jumpto( self->head[self->fade_active_head], buf, phase, is_forward );
@@ -85,6 +100,8 @@ void ihead_fade_jumpto( ihead_fade_t* self, buffer_t* buf, int phase, bool is_fo
     self->fade_phase = 0.0;
     float count = self->fade_length * 48000.0; // FIXME assume 48kHz samplerate
     self->fade_countdown = (int)count;
+
+    // ihead_pre_filter_set( self->head[self->fade_active_head], 0.0 ); // reset the filter memory
     if( count > 0 ){ self->fade_increment = 1.0 / count; }
 }
 
@@ -120,30 +137,44 @@ void ihead_fade_poke( ihead_fade_t*  self
                     , float          input
                     )
 {
+    // TODO update with LUT for lowpass value
     if( ihead_fade_is_recording( self ) ){ // skip poke if not recording
         ihead_t* hA = self->head[self->fade_active_head];
         float r = lp1_get_out( self->rec_slew );
         float p = lp1_get_out( self->pre_slew );
+    // filter
+        // float c = self->fade_pre_filter;
         if( self->fade_countdown > 0 ){
             ihead_t* hB = self->head[!self->fade_active_head];
             float mphase = 1.0 - self->fade_phase;
 
             // fade out
             ihead_rec_level( hB, r * rec_fade_LUT_get( mphase ) );
-            float lut = pre_fade_LUT_get(self->fade_phase);
-            float xf = 1.0 + lut*(p - 1.0);
-            ihead_pre_level( hB, xf);
+        // deactivated pre_fade
+            // float lut = pre_fade_LUT_get(self->fade_phase);
+            // float xf = 1.0 + lut*(p - 1.0);
+            // ihead_pre_level( hB, xf);
+            ihead_pre_level( hB, p);
+        // filter
+            // xf = 1.0 + lut*(c - 1.0);
+            // ihead_pre_filter( hB, xf );
             ihead_poke( hB, buf, speed, input );
 
             // fade in
             ihead_rec_level( hA, r * rec_fade_LUT_get(self->fade_phase) );
-            lut = pre_fade_LUT_get( mphase );
-            xf = 1.0 + lut*(p - 1.0);
-            ihead_pre_level( hA, xf);
+        // deactivated pre_fade
+            // lut = pre_fade_LUT_get( mphase );
+            // xf = 1.0 + lut*(p - 1.0);
+            // ihead_pre_level( hA, xf);
+            ihead_pre_level( hA, p);
+        // filter
+            // xf = 1.0 + lut*(c - 1.0);
+            // ihead_pre_filter( hA, xf );
             ihead_poke( hA, buf, speed, input );
         } else { // single head
             ihead_rec_level( hA, r );
             ihead_pre_level( hA, p );
+            // ihead_pre_filter( hA, c );
             ihead_poke( hA, buf, speed, input );
         }
     }

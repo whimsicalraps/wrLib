@@ -26,12 +26,12 @@ static void calc_loop_size( player_t* self );
 ///////////////////////////////
 // setup
 
-player_t* player_init( buffer_t* buffer )
+player_t* player_init( buffer_t* buffer, Buf_Map_Type_t maptype )
 {
     player_t* self = malloc( sizeof( player_t ) );
     if( !self ){ printf("player malloc failed.\n"); return NULL; }
 
-    self->head = ihead_fade_init();
+    self->head = ihead_fade_init(maptype);
     if( !self->head ){ printf("player head failed.\n"); return NULL; }
 
     self->transport = transport_init();
@@ -126,6 +126,9 @@ void player_rec_level( player_t* self, float rec_level ){
 }
 void player_pre_level( player_t* self, float pre_level ){
     ihead_fade_pre_level( self->head, pre_level );
+}
+void player_pre_filter( player_t* self, float coeff ){
+    ihead_fade_pre_filter( self->head, coeff );
 }
 void player_head_order( player_t* self, bool play_before_erase ){
     self->play_before_erase = play_before_erase;

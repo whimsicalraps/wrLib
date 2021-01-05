@@ -79,6 +79,11 @@ void buffer_mac_v( buffer_t* self, float* dst, int origin, int count, float coef
     buffer_interface_t* i = (buffer_interface_t*)(self->interface);
     return (*i->mac_v)( i, dst, origin, count, coeff );
 }
+void buffer_map_v( buffer_t* self, float* dst, int origin, int count, buf_map_t* map )
+{
+    buffer_interface_t* i = (buffer_interface_t*)(self->interface);
+    return (*i->map_v)( i, dst, origin, count, map );
+}
 
 bool buffer_request( buffer_t* self, int location )
 {

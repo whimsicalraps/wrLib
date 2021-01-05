@@ -5,15 +5,10 @@
 
 #include "wrBufferInterface.h"
 
+/////////////////////////////////////
+// private declarations
+
 static void apply_rate( delay_t* self );
-static void mac_v( buffer_interface_t* self, float* io
-                                    , int origin
-                                    , int count
-                                    , float coeff);
-static void mac_v16( buffer_interface_t* self, float* io
-                                    , int origin
-                                    , int count
-                                    , float coeff);
 
 
 //////////////////////////////////
@@ -30,18 +25,18 @@ delay_t* delay_init( Buf_Type_t type, int samples )
     bi->userdata = (void*)self; // give mac_v access to this object
     switch( type ){
         case Buf_Type_Float:
-            bi->mac_v = &mac_v; // overload with our LPfiltering mac function
             self->buf = buffer_init( sizeof(float), samples, bi );
             break;
         case Buf_Type_S16:
-            bi->mac_v = &mac_v16; // overload with our LPfiltering mac function
             self->buf = buffer_init( sizeof(int16_t), samples, bi );
             break;
         default: printf("delay: buffer type unsupported.\n"); return NULL;
     }
-    self->play = player_init( self->buf );
-    self->lpf = 0.0;
+    // causes some noises at loop bounds i think
+    // still sounds freaking great though!
+    self->play = player_init( self->buf, Buf_Map_Filter );
 
+    delay_lowpass( self, 0.0 );
     delay_subloop( self, false ); // FIXME should be false
     player_playing( self->play, true );
     delay_freeze( self, false );
@@ -206,6 +201,7 @@ void delay_freeze( delay_t* self, bool is_freeze )
 void delay_lowpass( delay_t* self, float coeff )
 {
     self->lpf = (coeff < 0.0) ? 0.0 : (coeff > 1.0) ? coeff = 1.0 : coeff;
+    player_pre_filter( self->play, self->lpf );
 }
 
 // ratiometric loop+cut modifiers
@@ -347,68 +343,4 @@ float* delay_step_v( delay_t* self, float* io, int size )
 static void apply_rate( delay_t* self )
 {
     player_speed( self->play, self->rate + self->mod );
-}
-
-static void mac_v( buffer_interface_t* self, float* io
-                                    , int    origin
-                                    , int    count
-                                    , float  coeff )
-{
-    static float LAST_SAMP = 0.0;
-    delay_t* d = (delay_t*)self->userdata;
-    float* s = io;
-
-    int dir = (count>=0) ? 1 : -1;
-    int abscount = (count>=0) ? count : -count;
-    float* buffer = (float*)self->buf->b;
-    for( int i=0; i<abscount; i++ ){
-        // skipping bounds checks, instead relying on wrIPlayer's LEAD_IN protection
-    // FIXME UNLOOP breaks without these. can optimize!
-        while( origin < 0 ){ origin += self->buf->len; }
-        while( origin >= self->buf->len ){ origin -= self->buf->len; }
-        float dbuf = buffer[origin]; // TODO add dither?
-    // lp1. but this does weird things with the xfade :/ sounds ok though!?
-    // sounds increasingly bad the shorter the time (greater % spent in xfade)
-    // really need to get it inside of the wrIHead.
-        LAST_SAMP  = LAST_SAMP + d->lpf * (dbuf - LAST_SAMP);
-        LAST_SAMP *= coeff; // feedback level
-        buffer[origin] = *s++ + LAST_SAMP;
-        origin += dir;
-    }
-}
-static void mac_v16( buffer_interface_t* self, float* io
-                                    , int    origin
-                                    , int    count
-                                    , float  coeff )
-{
-    const float S16MAX = (float)0x7FFF;
-    const float iS16MAX = 1.0/(float)0x7FFF;
-
-    static float LAST_SAMP = 0.0;
-    delay_t* d = (delay_t*)self->userdata;
-    float* s = io;
-
-    int dir = (count>=0) ? 1 : -1;
-    int abscount = (count>=0) ? count : -count;
-    int16_t* buffer = (int16_t*)self->buf->b;
-    for( int i=0; i<abscount; i++ ){
-        // skipping bounds checks, instead relying on wrIPlayer's LEAD_IN protection
-    // FIXME UNLOOP breaks without these. can optimize!
-        while( origin < 0 ){ origin += self->buf->len; }
-        while( origin >= self->buf->len ){ origin -= self->buf->len; }
-        // READ
-        float dbuf = (float)buffer[origin] * iS16MAX; // TODO add dither?
-    // lp1. but this does weird things with the xfade :/ sounds ok though!?
-    // sounds increasingly bad the shorter the time (greater % spent in xfade)
-    // really need to get it inside of the wrIHead.
-        LAST_SAMP  = LAST_SAMP + d->lpf * (dbuf - LAST_SAMP);
-        LAST_SAMP *= coeff; // feedback level
-
-        int ts = (*s++ + LAST_SAMP) * (float)S16MAX;
-        ts = (ts > 0x7FFF) ? 0x7FFF
-                : (ts < -0x8000) ? -0x8000 : ts;
-        buffer[origin] = (int16_t)ts;
-
-        origin += dir;
-    }
 }

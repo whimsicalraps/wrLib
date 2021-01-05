@@ -26,7 +26,7 @@ typedef struct{
 } player_t;
 
 // setup
-player_t* player_init( buffer_t* buffer );
+player_t* player_init( buffer_t* buffer, Buf_Map_Type_t maptype );
 void player_deinit( player_t* self );
 
 // param setters
@@ -40,6 +40,7 @@ void player_nudge( player_t* self, int amount );
 void player_recording( player_t* self, bool is_record );
 void player_rec_level( player_t* self, float rec_level );
 void player_pre_level( player_t* self, float pre_level );
+void player_pre_filter( player_t* self, float coeff );
 void player_head_order( player_t* self, bool play_before_erase );
 void player_loop( player_t* self, int looping );
         void player_loop_start_int( player_t* self, int location );

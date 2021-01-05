@@ -15,41 +15,53 @@
 // private declarations for export
 
 // (float)buffer
-float* _peek_v( buffer_interface_t* self
+static float* _peek_v( buffer_interface_t* self
               , float* io
               , int origin
               , int count
               );
-void _poke_v( buffer_interface_t* self
+static void _poke_v( buffer_interface_t* self
             , float* io
             , int origin
             , int count
             );
-void _mac_v( buffer_interface_t* self
+static void _mac_v( buffer_interface_t* self
            , float* io
            , int origin
            , int count
            , float coeff
            );
+static void _map_v( buffer_interface_t* self
+                  , float*     io
+                  , int        origin
+                  , int        count
+                  , buf_map_t* map
+                  );
 // (int16_t)buffer
-float* _peek_v16( buffer_interface_t* self
+static float* _peek_v16( buffer_interface_t* self
               , float* io
               , int origin
               , int count
               );
-void _poke_v16( buffer_interface_t* self
+static void _poke_v16( buffer_interface_t* self
             , float* io
             , int origin
             , int count
             );
-void _mac_v16( buffer_interface_t* self
+static void _mac_v16( buffer_interface_t* self
            , float* io
            , int origin
            , int count
            , float coeff
            );
-bool _request( buffer_interface_t* self, int location );
-void _free( buffer_interface_t* self );
+static void _map_v16( buffer_interface_t* self
+                    , float*     io
+                    , int        origin
+                    , int        count
+                    , buf_map_t* map
+                    );
+static bool _request( buffer_interface_t* self, int location );
+static void _free( buffer_interface_t* self );
 
 
 /////////////////////////////////////
@@ -67,10 +79,12 @@ buffer_interface_t* buffer_interface_init( Buf_Type_t type )
         self->peek_v  = _peek_v;
         self->poke_v  = _poke_v;
         self->mac_v   = _mac_v;
+        self->map_v   = _map_v;
     } else if( self->datatype == Buf_Type_S16 ){
         self->peek_v  = _peek_v16;
         self->poke_v  = _poke_v16;
         self->mac_v   = _mac_v16;
+        self->map_v   = _map_v16;
     } else {
         printf("buffer_interface: unsupported datatype.\n");
     }
@@ -91,7 +105,7 @@ void buffer_interface_deinit( buffer_interface_t* self )
 /////////////////////////////////////
 // public api for export
 
-float* _peek_v( buffer_interface_t* self
+static float* _peek_v( buffer_interface_t* self
               , float* io
               , int origin
               , int count
@@ -113,7 +127,7 @@ float* _peek_v( buffer_interface_t* self
     return io;
 }
 
-void _poke_v( buffer_interface_t* self
+static void _poke_v( buffer_interface_t* self
             , float* io
             , int origin
             , int count
@@ -131,7 +145,7 @@ void _poke_v( buffer_interface_t* self
     }
 }
 
-void _mac_v( buffer_interface_t* self
+static void _mac_v( buffer_interface_t* self
            , float* io
            , int origin
            , int count
@@ -146,13 +160,35 @@ void _mac_v( buffer_interface_t* self
         while( origin < 0 ){ origin += self->buf->len; }
         while( origin >= self->buf->len ){ origin -= self->buf->len; }
         float bs = buffer[origin];
-    // TODO any filtering happens here
         buffer[origin] = *s++ + bs*coeff;
         origin += dir;
     }
 }
 
-float* _peek_v16( buffer_interface_t* self
+static void _map_v( buffer_interface_t* self
+                  , float*     io
+                  , int        origin
+                  , int        count
+                  , buf_map_t* map )
+{
+    float* s = io;
+    int dir = (count>=0) ? 1 : -1;
+    int abscount = (count>=0) ? count : -count;
+    float* buffer = (float*)self->buf->b;
+    for( int i=0; i<abscount; i++ ){
+        while( origin < 0 ){ origin += self->buf->len; }
+        while( origin >= self->buf->len ){ origin -= self->buf->len; }
+        // READ
+        float dbuf = buffer[origin];
+        // MAP
+        dbuf = (*map->fn)(map->userdata, dbuf);
+        // WRITE
+        buffer[origin] = *s++ + dbuf;
+        origin += dir;
+    }
+}
+
+static float* _peek_v16( buffer_interface_t* self
               , float* io
               , int origin
               , int count
@@ -177,7 +213,7 @@ float* _peek_v16( buffer_interface_t* self
     return io;
 }
 
-void _poke_v16( buffer_interface_t* self
+static void _poke_v16( buffer_interface_t* self
             , float* io
             , int origin
             , int count
@@ -200,7 +236,7 @@ void _poke_v16( buffer_interface_t* self
     }
 }
 
-void _mac_v16( buffer_interface_t* self
+static void _mac_v16( buffer_interface_t* self
            , float* io
            , int origin
            , int count
@@ -214,7 +250,6 @@ void _mac_v16( buffer_interface_t* self
     for( int i=0; i<abscount; i++ ){
         while( origin < 0 ){ origin += self->buf->len; }
         while( origin >= self->buf->len ){ origin -= self->buf->len; }
-
         // READ
         float dbuf = (float)buffer[origin] * iS16MAX; // TODO add dither?
         // WRITE
@@ -222,17 +257,41 @@ void _mac_v16( buffer_interface_t* self
         ts = (ts > 0x7FFF) ? 0x7FFF
                 : (ts < -0x8000) ? -0x8000 : ts;
         buffer[origin] = (int16_t)ts;
-
         origin += dir;
     }
 }
 
-bool _request( buffer_interface_t* self, int location )
+static void _map_v16( buffer_interface_t* self, float* io
+                                    , int    origin
+                                    , int    count
+                                    , buf_map_t* map )
+{
+    float* s = io;
+    int dir = (count>=0) ? 1 : -1;
+    int abscount = (count>=0) ? count : -count;
+    int16_t* buffer = (int16_t*)self->buf->b;
+    for( int i=0; i<abscount; i++ ){
+        while( origin < 0 ){ origin += self->buf->len; }
+        while( origin >= self->buf->len ){ origin -= self->buf->len; }
+        // READ
+        float dbuf = (float)buffer[origin] * iS16MAX; // TODO add dither?
+        // MAP
+        dbuf = (*map->fn)(map->userdata, dbuf);
+        // WRITE
+        int ts = (*s++ + dbuf) * (float)S16MAX;
+        ts = (ts > 0x7FFF) ? 0x7FFF
+                : (ts < -0x8000) ? -0x8000 : ts;
+        buffer[origin] = (int16_t)ts;
+        origin += dir;
+    }
+}
+
+static bool _request( buffer_interface_t* self, int location )
 {
     return true;
 }
 
-void _free( buffer_interface_t* self )
+static void _free( buffer_interface_t* self )
 {
     // DO NOTHING
     // implement this function to free your own allocated userdata

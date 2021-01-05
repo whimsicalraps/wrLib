@@ -3,6 +3,7 @@
 #include "wrIHead.h"
 //#include "wrBuffer.h"
 //#include "wrFilter.h"
+#include "wrBufMap.h" // buf_map_t
 
 //#define OUT_BUF_LEN 64 // defines maximum speed
 
@@ -11,6 +12,7 @@ typedef struct{
     float    fade_length;
     float    fade_rec_level;
     float    fade_pre_level;
+    float    fade_pre_filter;
 
     // private
     ihead_t* head[2];
@@ -26,7 +28,7 @@ typedef struct{
 
 ////////////////////////////////////////
 // setup
-ihead_fade_t* ihead_fade_init( void );
+ihead_fade_t* ihead_fade_init( Buf_Map_Type_t map_type );
 void ihead_fade_deinit( ihead_fade_t* self );
 
 ////////////////////////////////////////
@@ -34,8 +36,10 @@ void ihead_fade_deinit( ihead_fade_t* self );
 void ihead_fade_jumpto( ihead_fade_t* self, buffer_t* buf, int phase, bool is_forward );
 void ihead_fade_align( ihead_fade_t* self, bool is_forward );
 void ihead_fade_recording( ihead_fade_t* self, bool is_recording );
+void ihead_fade_xfade_ms( ihead_fade_t* self, float time );
 void ihead_fade_rec_level( ihead_fade_t* self, float level );
 void ihead_fade_pre_level( ihead_fade_t* self, float level );
+void ihead_fade_pre_filter( ihead_fade_t* self, float coeff );
 
 ////////////////////////////////////////
 // params: getters

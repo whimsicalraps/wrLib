@@ -13,6 +13,19 @@ typedef enum{ Buf_Type_Float
             , Buf_Type_S16
 } Buf_Type_t;
 
+// object for passing around stateful modifier functions
+
+typedef enum{ Buf_Map_None
+            , Buf_Map_Gain
+            , Buf_Map_Filter
+} Buf_Map_Type_t;
+
+typedef struct {
+    float (*fn)( void*, float );
+    Buf_Map_Type_t type;
+    void* userdata;
+} buf_map_t;
+
 typedef struct buffer_interface{
     // link to parent
     buffer_t* buf;
@@ -22,6 +35,7 @@ typedef struct buffer_interface{
     float* (*peek_v)( struct buffer_interface*, float*, int, int);
     void (*poke_v)( struct buffer_interface*, float*, int, int);
     void (*mac_v)( struct buffer_interface*, float*, int, int, float);
+    void (*map_v)( struct buffer_interface*, float*, int, int, buf_map_t*);
     bool (*request)( struct buffer_interface*, int );
     void (*free)( struct buffer_interface* );
 
@@ -34,6 +48,7 @@ typedef struct buffer_interface{
 typedef float* (*buffer_peek_v_t)( buffer_interface_t*, float*, int, int );
 typedef void (*buffer_poke_v_t)( buffer_interface_t*, float*, int, int );
 typedef void (*buffer_mac_v_t)( buffer_interface_t*, float*, int, int, float );
+typedef void (*buffer_map_v_t)( buffer_interface_t*, float*, int, int, buf_map_t*);
 typedef bool (*buffer_request_t)( buffer_interface_t*, int );
 
 // setup
@@ -49,4 +64,5 @@ buffer_t* buffer_load_and_own( buffer_t* self, float* buffer, int length );
 float* buffer_peek_v( buffer_t* self, float* dst, int origin, int count );
 void buffer_poke_v( buffer_t* self, float* dst, int origin, int count );
 void buffer_mac_v( buffer_t* self, float* dst, int origin, int count, float coeff );
+void buffer_map_v( buffer_t* self, float* dst, int origin, int count, buf_map_t* map );
 bool buffer_request( buffer_t* self, int location );

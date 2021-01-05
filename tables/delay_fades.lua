@@ -59,8 +59,8 @@ end
 
 -- calculated single location at phase [0,1]
 function pre_fade( phase )
-    return 1.0
-    --return math.min( phase / PRE_FADE_WINDOW, 1.0 )
+    -- return 1.0
+    return math.min( phase / PRE_FADE_WINDOW, 1.0 )
 end
 
 function rec_fade( phase )

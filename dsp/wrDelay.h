@@ -2,13 +2,15 @@
 
 #include "wrBuffer.h"
 #include "wrIPlayer.h"
+#include "wrBufMap.h" // buf_map_t
 
 typedef struct{
-    buffer_t* buf;
-    player_t* play;
-    float     rate; // base rate, to apply modulation on top of
-    float     mod; // rate modulation amount
-    float     lpf;
+    buffer_t*  buf;
+    player_t*  play;
+    float      rate; // base rate, to apply modulation on top of
+    float      mod; // rate modulation amount
+    float      lpf;
+    buf_map_t* head_filter;
 } delay_t;
 
 #define LOOP_MIN_LENGTH (64+4)
