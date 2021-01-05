@@ -72,7 +72,7 @@ void delay_rate( delay_t* self, float rate )
 void delay_rate_smoothed( delay_t* self, float rate )
 {
     // FIXME add smoothing
-    self->play->transport->speeds.accel_standard = 0.00005;
+    self->play->transport->speeds.accel_standard = 0.002;
     self->rate = rate;
     apply_rate( self );
 }

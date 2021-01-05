@@ -101,6 +101,9 @@ void ihead_fade_jumpto( ihead_fade_t* self, buffer_t* buf, phase_t phase, bool i
     float count = self->fade_length * 48000.0; // FIXME assume 48kHz samplerate
     self->fade_countdown = (int)count;
 
+
+// FIXME rather than set to a value, copy the filter output from the active head into new-active head
+        // nb: the below function isn't hooked up atm.
     // ihead_pre_filter_set( self->head[self->fade_active_head], 0.0 ); // reset the filter memory
     if( count > 0 ){ self->fade_increment = 1.0 / count; }
 }
