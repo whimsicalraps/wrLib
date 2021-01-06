@@ -42,6 +42,7 @@ int delay_is_subloop( delay_t* self ); // playback is restricted to a sub-loop
 bool delay_is_freeze( delay_t* self ); // recording (and erase) is disabled
 float delay_get_cut( delay_t* self ); // current playhead location in samples
 float delay_get_lowpass( delay_t* self );
+bool delay_is_near_loop( delay_t* self );
 
 float delay_step( delay_t* self, float in );
 float* delay_step_v( delay_t* self, float* io, int size );

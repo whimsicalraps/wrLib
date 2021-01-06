@@ -312,6 +312,17 @@ float delay_get_lowpass( delay_t* self )
     return self->lpf;
 }
 
+bool delay_is_near_loop( delay_t* self )
+{
+    const int window = 850; // ensures visability at 2x speed
+    int now = player_get_goto( self->play ).i;
+    int start = player_get_loop_start( self->play ).i;
+
+    if( now < (start+window)
+     && now > (start-window) ){ return true; }
+    else{ return false; }
+}
+
 
 ///////////////////////////////////
 // signal
