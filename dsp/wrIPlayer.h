@@ -73,6 +73,7 @@ phase_t player_get_tape_length( player_t* self );
 bool player_is_location_in_loop( player_t* self, phase_t location );
 float player_position_in_loop( player_t* self, int location );
 int player_is_location_off_tape( player_t* self, phase_t location );
+bool player_is_loop_forward( player_t* self );
 
 // signals
 float player_step( player_t* self, float in );

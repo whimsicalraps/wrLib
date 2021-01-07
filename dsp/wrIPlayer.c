@@ -265,6 +265,12 @@ int player_is_location_off_tape( player_t* self, phase_t location )
     return inside;
 }
 
+bool player_is_loop_forward( player_t* self )
+{
+    // FIXME handle unloop
+    return phase_lt( self->loop_start, self->loop_end );
+}
+
 
 /////////////////////////////////////
 // signals
