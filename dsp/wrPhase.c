@@ -79,7 +79,7 @@ phase_t phase_null( void ){
 }
 
 phase_t phase_zero( void ){
-    return (phase_t){ .i = 0.0, .f = 0.0 };
+    return (phase_t){ .i = 0, .f = 0.0 };
 }
 
 phase_t phase_new( int sample, float subsample ){
