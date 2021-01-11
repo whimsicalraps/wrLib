@@ -291,17 +291,13 @@ float awin_step( filter_awin_t* f, float input )
 	float roc = f->slope_sense
 	            * ( windowed_avg - f->out );
 
-    roc = lim_f_0_1( max_f( roc * roc
-	                      , 0.008
-						  )
-				   );
+    roc = roc * roc;
+    roc = (roc > 1.0) ? 1.0 : (roc < 0.008) ? 0.008 : roc;
 
 	// slope-sensitive-smoother
-    f->out = lim_f_0_1( input
-		              + ( 1.0 - roc )
-		                * ( f->out - input )
-                      );
-	return f->out;
+    f->out = input + (1.0 - roc ) * (f->out - input);
+    f->out = (f->out > 1.0) ? 1.0 : (f->out < 0.0) ? 0.0 : f->out;
+    return f->out;
 }
 float awin_get_out( filter_awin_t* f )
 {
