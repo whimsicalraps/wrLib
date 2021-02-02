@@ -101,6 +101,10 @@ void buf_map_filter_pre_level( buf_map_t* self, float c ){
 }
 void buf_map_filter_set( buf_map_t* self, float o ){
     buf_map_filter_t* f = (buf_map_filter_t*)self->userdata;
-    f->next = 1;
-//    lp1_set_out(f->filter, o);
+    // f->next = 1;
+    lp1_set_out(f->filter, o);
+}
+float buf_map_filter_get( buf_map_t* self ){
+    buf_map_filter_t* f = (buf_map_filter_t*)self->userdata;
+    return lp1_get_out( f->filter );
 }
