@@ -94,18 +94,24 @@ void ihead_fade_pre_filter( ihead_fade_t* self, float coeff )
 }
 
 void ihead_fade_jumpto( ihead_fade_t* self, buffer_t* buf, phase_t phase, bool is_forward ){
-    self->fade_active_head ^= 1; // flip active head
-    ihead_jumpto( self->head[self->fade_active_head], buf, phase, is_forward );
-    // initiate the xfade
-    self->fade_phase = 0.0;
-    float count = self->fade_length * 48000.0; // FIXME assume 48kHz samplerate
-    self->fade_countdown = (int)count;
+    // copy active head's filter state into inactive head, then switch
+    // ihead_pre_filter_set( self->head[!self->fade_active_head]
+        // , ihead_get_pre_filter_state( self->head[self->fade_active_head] ) );
+    if( self->fade_length >= (1.0/48000.0) ){ // at least 1 sample of fade time
+        self->fade_active_head ^= 1; // flip active head
+        ihead_jumpto( self->head[self->fade_active_head], buf, phase, is_forward );
+        // initiate the xfade
+        self->fade_phase = 0.0;
+        float count = self->fade_length * 48000.0; // FIXME assume 48kHz samplerate
+        self->fade_countdown = (int)count;
 
-
-// FIXME rather than set to a value, copy the filter output from the active head into new-active head
-        // nb: the below function isn't hooked up atm.
-    // ihead_pre_filter_set( self->head[self->fade_active_head], 0.0 ); // reset the filter memory
-    if( count > 0 ){ self->fade_increment = 1.0 / count; }
+    // FIXME rather than set to a value, copy the filter output from the active head into new-active head
+            // nb: the below function isn't hooked up atm.
+        // ihead_pre_filter_set( self->head[self->fade_active_head], 0.0 ); // reset the filter memory
+        self->fade_increment = 1.0 / count;
+    } else { // don't switch heads if no xfade
+        ihead_jumpto( self->head[self->fade_active_head], buf, phase, is_forward );
+    }
 }
 
 void ihead_fade_align( ihead_fade_t* self, bool is_forward ){
