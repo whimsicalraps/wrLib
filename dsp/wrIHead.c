@@ -117,6 +117,9 @@ void ihead_align( ihead_t* self, bool is_forward ){
 bool ihead_is_recording( ihead_t* self ){ return self->recording; }
 float ihead_get_rec_level( ihead_t* self ){ return self->rec_level; }
 float ihead_get_pre_level( ihead_t* self ){ return self->pre_level; }
+float ihead_get_pre_filter_state( ihead_t* self ){
+    return buf_map_filter_get( self->map );
+}
 phase_t ihead_get_location( ihead_t* self ){ return self->rphase; }
 
 
