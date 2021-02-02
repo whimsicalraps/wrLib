@@ -47,6 +47,7 @@ phase_t ihead_get_location( ihead_t* self );
 bool ihead_is_recording( ihead_t* self );
 float ihead_get_rec_level( ihead_t* self );
 float ihead_get_pre_level( ihead_t* self );
+float ihead_get_pre_filter_state( ihead_t* self );
 
 ////////////////////////////////////////
 // signal
