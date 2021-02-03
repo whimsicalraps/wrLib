@@ -8,12 +8,14 @@
 
 // necessary to keep read & write interpolation regions separate
 #define REC_OFFSET (-2) // write head trails read head
+#define REC_OFFSET_2 (2) // write head trails read head
 
 
 //////////////////////////////
 // private declarations
 static float* push_input( ihead_t* self, float* buf, float in );
 static int write( ihead_t* self, float rate, float input );
+static void sync_wphase( ihead_t* self, phase_t new_wphase );
 
 
 /////////////////////////////////
@@ -29,9 +31,6 @@ ihead_t* ihead_init( Buf_Map_Type_t map_type )
     self->in_buf_ix = 0;
 
     for( int i=0; i<OUT_BUF_LEN; i++ ){ self->out_buf[i] = 0.0; }
-    self->out_phase = 0.0; // [0,1)
-
-    self->write_ix = 0; // phase into the buffer_t
 
     ihead_recording( self, false );
 
@@ -45,7 +44,16 @@ ihead_t* ihead_init( Buf_Map_Type_t map_type )
     ihead_pre_level( self, 0.0 );
 
 // READ HEAD
-    self->rphase = phase_new( self->write_ix - REC_OFFSET, 0.0 );
+    self->rphase   = phase_new( 0 - REC_OFFSET, 0.0 );
+    self->wphase   = self->rphase;
+    self->wphase_1 = phase_sub( self->wphase, phase_new(1,0.0) );
+    // separate version to be deprecated
+    // self->write_ix = self->wphase.i; // TODO update to wphase.i
+    self->out_phase = 0.0; // [0,1)
+
+    for( int i=0; i<3; i++ ){
+        self->wphase_i[i] = self->rphase.i - (i+2);
+    }
 
     return self;
 }
@@ -102,12 +110,15 @@ void ihead_pre_filter_set( ihead_t* self, float set ){
     }
 }
 void ihead_jumpto( ihead_t* self, buffer_t* buf, phase_t phase, bool is_forward ){
-    self->write_ix = (is_forward) ? phase.i + REC_OFFSET : phase.i - REC_OFFSET;
+    // self->write_ix = (is_forward) ? phase.i + REC_OFFSET : phase.i - REC_OFFSET; // TODO deprecate
     self->rphase = phase;
+    // sync_wphase( self, self->rphase );
+    self->wphase = phase;
 }
 void ihead_align( ihead_t* self, bool is_forward ){
-    self->write_ix = (is_forward) ? self->rphase.i + REC_OFFSET
-                                  : self->rphase.i - REC_OFFSET;
+    // self->write_ix = (is_forward) ? self->rphase.i + REC_OFFSET
+                                  // : self->rphase.i - REC_OFFSET;
+    // sync_wphase(self); // should be unnecessary!
 }
 
 
@@ -130,29 +141,31 @@ void ihead_poke( ihead_t* self, buffer_t* buf
                               , float     speed
                               , float     input )
 {
-    if( speed == 0.0 ){ return; }
-
+    sync_wphase( self, phase_add( self->wphase, phase_from_double(speed) ) );
     int nframes = write( self, speed, input * self->rec_level );
-    if( nframes == 0 ){ return; } // nothing to do
-
-    int nframes_dir = (speed >= 0.0) ? nframes : -nframes;
-// TODO can factor both of these per block in poke_v
-    if( self->recording ){
-        if( self->map ){ // custom map
-            buffer_map_v( buf
-                        , self->out_buf
-                        , self->write_ix
-                        , nframes_dir
-                        , self->map );
-        } else { // no custom map map fn
-            buffer_mac_v( buf
-                        , self->out_buf // the data to be written to the buffer_t
-                        , self->write_ix
-                        , nframes_dir
-                        , self->pre_level );
+    if( nframes ){
+        int nframes_dir = (speed >= 0.0) ? nframes : -nframes;
+    // TODO can factor both of these per block in poke_v
+        if( self->recording ){
+            if( self->map ){ // custom map
+                buffer_map_v( buf
+                            , self->out_buf
+                            , self->wphase_i[REC_OFFSET_2-1]
+                            , nframes_dir
+                            , self->map );
+            } else { // no custom map map fn
+                buffer_mac_v( buf
+                            , self->out_buf // the data to be written to the buffer_t
+                            , self->wphase_i[REC_OFFSET_2]
+                            , nframes_dir
+                            , self->pre_level );
+            }
         }
+        for( int i=0; i<REC_OFFSET_2; i++ ){
+            self->out_buf[i] = self->out_buf[i+nframes];
+        }
+        // self->write_ix += nframes_dir;
     }
-    self->write_ix += nframes_dir;
 }
 
 void ihead_poke_v( ihead_t* self, buffer_t* buf
@@ -250,27 +263,44 @@ static int write( ihead_t* self, float rate, float input )
     float pushed_buf[4];
     push_input( self, pushed_buf, input );
 
+    if( rate == 0.0 ){ return 0; } // save input, but no advancement if stopped
+
     rate = (rate < 0.0) ? -rate : rate; // handle negative speeds
 
-    float phi = 1.0/rate;
-    float new_phase = self->out_phase + rate;
-    int new_frames = (int)new_phase;
+    int new_frames = abs(self->wphase.i - self->wphase_1.i);
+
     // we want to track fractional output phase for interpolation
     // this is normalized to the distance between input frames
     // so: the distance to the first output frame boundary:
     if( new_frames ){
-        float f = 1.0 - self->out_phase;
+        float phi = 1.0/rate;
+        float f = 1.0 - self->wphase_1.f;
         f *= phi; // normalized (divided by rate);
 
         int i=0;
         while(i < new_frames) {
             // distance between output frames in this normalized space is 1/rate
-            self->out_buf[i] = interp_hermite_4pt( f, &(pushed_buf[1]) );
+            self->out_buf[i+REC_OFFSET_2] = interp_hermite_4pt( f, &(pushed_buf[1]) );
             f += phi;
             i++;
         }
     }
     // store the remainder of the updated, un-normalized output phase
-    self->out_phase = new_phase - (float)new_frames;
     return new_frames; // count of complete frames written
+}
+
+static void sync_wphase( ihead_t* self, phase_t new_wphase )
+{
+    // int i=REC_OFFSET_2;
+    // while(i >)
+    // for( int i=0; i<REC_OFFSET_2; i++ ){
+    //     self->wphase_i[2] = self->wphase_i[1];
+    // }
+    if( self->wphase_i[0] != self->wphase.i ){
+        self->wphase_i[2] = self->wphase_i[1];
+        self->wphase_i[1] = self->wphase_i[0];
+        self->wphase_i[0] = self->wphase_1.i;
+    }
+    self->wphase_1 = self->wphase;
+    self->wphase   = new_wphase;
 }
