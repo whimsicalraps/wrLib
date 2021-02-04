@@ -10,6 +10,8 @@
 #define REC_OFFSET (-2) // write head trails read head
 #define REC_OFFSET_2 (2) // write head trails read head
 
+static const int MAX_SPEED = 4; // just to catch bad write values
+
 
 //////////////////////////////
 // private declarations
@@ -31,6 +33,7 @@ ihead_t* ihead_init( Buf_Map_Type_t map_type )
     self->in_buf_ix = 0;
 
     for( int i=0; i<OUT_BUF_LEN; i++ ){ self->out_buf[i] = 0.0; }
+    for( int i=0; i<OUT_BUF_LEN; i++ ){ self->out_buf_ix[i] = 0; }
 
     ihead_recording( self, false );
 
@@ -46,14 +49,7 @@ ihead_t* ihead_init( Buf_Map_Type_t map_type )
 // READ HEAD
     self->rphase   = phase_new( 0 - REC_OFFSET, 0.0 );
     self->wphase   = self->rphase;
-    self->wphase_1 = phase_sub( self->wphase, phase_new(1,0.0) );
-    // separate version to be deprecated
-    // self->write_ix = self->wphase.i; // TODO update to wphase.i
-    self->out_phase = 0.0; // [0,1)
-
-    for( int i=0; i<3; i++ ){
-        self->wphase_i[i] = self->rphase.i - (i+2);
-    }
+    sync_wphase(self,self->rphase);
 
     return self;
 }
@@ -110,15 +106,12 @@ void ihead_pre_filter_set( ihead_t* self, float set ){
     }
 }
 void ihead_jumpto( ihead_t* self, buffer_t* buf, phase_t phase, bool is_forward ){
-    // self->write_ix = (is_forward) ? phase.i + REC_OFFSET : phase.i - REC_OFFSET; // TODO deprecate
     self->rphase = phase;
-    // sync_wphase( self, self->rphase );
-    self->wphase = phase;
+    sync_wphase( self, self->rphase ); // TODO unnecessary?
 }
 void ihead_align( ihead_t* self, bool is_forward ){
-    // self->write_ix = (is_forward) ? self->rphase.i + REC_OFFSET
-                                  // : self->rphase.i - REC_OFFSET;
-    // sync_wphase(self); // should be unnecessary!
+    // sync_wphase(self, self->rphase); // should be unnecessary!
+    // sync_wphase(self, self->rphase); // should be unnecessary!
 }
 
 
@@ -141,7 +134,7 @@ void ihead_poke( ihead_t* self, buffer_t* buf
                               , float     speed
                               , float     input )
 {
-    sync_wphase( self, phase_add( self->wphase, phase_from_double(speed) ) );
+    sync_wphase( self, self->rphase ); // rphase & wphase are locked together
     int nframes = write( self, speed, input * self->rec_level );
     if( nframes ){
         int nframes_dir = (speed >= 0.0) ? nframes : -nframes;
@@ -150,21 +143,24 @@ void ihead_poke( ihead_t* self, buffer_t* buf
             if( self->map ){ // custom map
                 buffer_map_v( buf
                             , self->out_buf
-                            , self->wphase_i[REC_OFFSET_2-1]
+    // not *too* hard to refactor to pass an array, but let's see if we really need it, or if we can get 99% of the way with just the origin
+            // if clicks remain - investigate by printing `origin` in buffer_interface _map_v16
+                            , *self->out_buf_ix // FIXME do we need to refactor to accept an array? especially for non-integer speed multipliers?
                             , nframes_dir
                             , self->map );
             } else { // no custom map map fn
                 buffer_mac_v( buf
                             , self->out_buf // the data to be written to the buffer_t
-                            , self->wphase_i[REC_OFFSET_2]
+                            , *self->out_buf_ix // FIXME see above
                             , nframes_dir
                             , self->pre_level );
             }
         }
-        for( int i=0; i<REC_OFFSET_2; i++ ){
+    // FIXME refactor with queue
+        for( int i=0; i<REC_OFFSET_2*2; i++ ){
             self->out_buf[i] = self->out_buf[i+nframes];
+            self->out_buf_ix[i] = self->out_buf_ix[i+nframes];
         }
-        // self->write_ix += nframes_dir;
     }
 }
 
@@ -191,6 +187,7 @@ float ihead_peek( ihead_t* self, buffer_t* buf, float speed )
     float out = interp_hermite_4pt( self->rphase.f, &samps[1] );
 
     // update phase
+    // TODO use phase_add
     phase_t* p = &(self->rphase);
     p->f += speed;
     while( p->f >= 1.0 ){ p->i++; p->f -= 1.0; }
@@ -265,9 +262,11 @@ static int write( ihead_t* self, float rate, float input )
 
     if( rate == 0.0 ){ return 0; } // save input, but no advancement if stopped
 
+    int dir_mul = (rate < 0.0) ? -1 : 1;
     rate = (rate < 0.0) ? -rate : rate; // handle negative speeds
 
     int new_frames = abs(self->wphase.i - self->wphase_1.i);
+    if( new_frames > MAX_SPEED ){ return 0; } // wphase is wrong
 
     // we want to track fractional output phase for interpolation
     // this is normalized to the distance between input frames
@@ -280,7 +279,9 @@ static int write( ihead_t* self, float rate, float input )
         int i=0;
         while(i < new_frames) {
             // distance between output frames in this normalized space is 1/rate
+// FIXME refactor with queue
             self->out_buf[i+REC_OFFSET_2] = interp_hermite_4pt( f, &(pushed_buf[1]) );
+            self->out_buf_ix[i+REC_OFFSET_2] = self->wphase_1.i + (i*dir_mul);
             f += phi;
             i++;
         }
@@ -291,16 +292,6 @@ static int write( ihead_t* self, float rate, float input )
 
 static void sync_wphase( ihead_t* self, phase_t new_wphase )
 {
-    // int i=REC_OFFSET_2;
-    // while(i >)
-    // for( int i=0; i<REC_OFFSET_2; i++ ){
-    //     self->wphase_i[2] = self->wphase_i[1];
-    // }
-    if( self->wphase_i[0] != self->wphase.i ){
-        self->wphase_i[2] = self->wphase_i[1];
-        self->wphase_i[1] = self->wphase_i[0];
-        self->wphase_i[0] = self->wphase_1.i;
-    }
     self->wphase_1 = self->wphase;
     self->wphase   = new_wphase;
 }

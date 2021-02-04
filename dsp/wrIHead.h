@@ -4,7 +4,7 @@
 #include "wrBuffer.h"
 #include "wrFilter.h"
 
-#define OUT_BUF_LEN 8 // defines maximum speed
+#define OUT_BUF_LEN 16 // defines maximum speed
 
 typedef struct{
     // WRITE / ERASE HEAD
@@ -12,9 +12,7 @@ typedef struct{
     int   in_buf_ix; // 'phase' but always advances by 1
 
     float out_buf[OUT_BUF_LEN];
-    float out_phase;
-
-    // int write_ix; // pointer into the destination buffer
+    int   out_buf_ix[OUT_BUF_LEN];
 
     bool  recording;
 
@@ -22,11 +20,10 @@ typedef struct{
     float rec_level;
     float pre_level;
 
-    // READ HEAD
+    // HEAD PHASORS
     phase_t rphase;
     phase_t wphase;
     phase_t wphase_1;
-    int     wphase_i[3];
 } ihead_t;
 
 ////////////////////////////////////////
