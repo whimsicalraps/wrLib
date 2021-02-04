@@ -67,13 +67,7 @@ typedef struct{
 static float buf_map_filter( void* userdata, float input )
 {
     buf_map_filter_t* f = (buf_map_filter_t*)userdata;
-    // return lp1_step(f->filter, input * f->pre_level);
-    // if(f->next){
-    //     f->next = 0;
-    //     lp1_set_out(f->filter, input);
-    // }
-    // return lp1_step(f->filter, input) * f->pre_level;
-    return lp1_step(f->filter, input * f->pre_level); // seems wrong, but sounds better for now
+    return lp1_step(f->filter, input) * f->pre_level;
 }
 
 buf_map_t* buf_map_filter_init( void )
@@ -101,7 +95,6 @@ void buf_map_filter_pre_level( buf_map_t* self, float c ){
 }
 void buf_map_filter_set( buf_map_t* self, float o ){
     buf_map_filter_t* f = (buf_map_filter_t*)self->userdata;
-    // f->next = 1;
     lp1_set_out(f->filter, o);
 }
 float buf_map_filter_get( buf_map_t* self ){
