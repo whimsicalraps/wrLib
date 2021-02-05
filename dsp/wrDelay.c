@@ -337,15 +337,26 @@ float* delay_step_v( delay_t* self, float* io, int size )
 // uncomment to use block processing version
         // pro: less than half the CPU usage
         // con: delay time can't preceed 'size'
-    //return player_step_v( self->play, io, size );
+    // return player_step_v( self->play, io, size );
 
-    // using single-sample version to force sample accuracy
-    float* b = io;
-    for( int i=0; i<size; i++ ){
-        *b = player_step( self->play, *b );
-        b++;
+    // 4-samps at a time
+    // reduces CPU massively, without compromising sample-accuracy too much
+    // WARNING: size MUST be a multiple of increment
+    const int increment = 4;
+    for( int i=0; i<size; i+=increment ){ // 2 samps at a time!
+        player_step_v( self->play, &io[i], increment );
+        // *b = player_step( self->play, *b );
+        // b++;
     }
     return io;
+
+    // using single-sample version to force sample accuracy
+    // float* b = io;
+    // for( int i=0; i<size; i++ ){
+    //     *b = player_step( self->play, *b );
+    //     b++;
+    // }
+    // return io;
 }
 
 
