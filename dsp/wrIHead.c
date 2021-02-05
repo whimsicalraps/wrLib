@@ -10,6 +10,8 @@
 #define REC_OFFSET (-2) // write head trails read head
 #define REC_OFFSET_2 (2) // write head trails read head
 
+#define WPHASE_OFFSET (3) // write head waits this many samps before modifying buf
+
 static const int MAX_SPEED = 4; // just to catch bad write values
 
 
@@ -32,8 +34,13 @@ ihead_t* ihead_init( Buf_Map_Type_t map_type )
     for( int i=0; i<4; i++ ){ self->in_buf[i] = 0.0; }
     self->in_buf_ix = 0;
 
-    for( int i=0; i<OUT_BUF_LEN; i++ ){ self->out_buf[i] = 0.0; }
-    for( int i=0; i<OUT_BUF_LEN; i++ ){ self->out_buf_ix[i] = 0; }
+    self->q_out_buf = queue_init( OUT_BUF_LEN );
+    for( int i=0; i<WPHASE_OFFSET; i++ ){ // NOTE: sets the WPHASE head delay
+        // pre-fill the buffer with zeroes
+        int qix = queue_enqueue(self->q_out_buf);
+        self->out_buf[qix] = 0.0;
+        self->out_buf_ix[qix] = 0;
+    }
 
     ihead_recording( self, false );
 
@@ -143,27 +150,39 @@ void ihead_poke( ihead_t* self, buffer_t* buf
         int nframes_dir = (speed >= 0.0) ? nframes : -nframes;
     // TODO can factor both of these per block in poke_v
         if( self->recording ){
+            int qix = queue_dequeue( self->q_out_buf );
+            int obuf_ix = self->out_buf[qix];
+            float obuf[nframes];
+            obuf[0] = self->out_buf[qix];
+            for( int i=1; i<nframes; i++ ){
+                qix = queue_dequeue( self->q_out_buf );
+                obuf[i] = self->out_buf[qix];
+            }
             if( self->map ){ // custom map
                 buffer_map_v( buf
-                            , self->out_buf
+                            // , self->out_buf
+                            , obuf
     // not *too* hard to refactor to pass an array, but let's see if we really need it, or if we can get 99% of the way with just the origin
             // if clicks remain - investigate by printing `origin` in buffer_interface _map_v16
-                            , *self->out_buf_ix // FIXME do we need to refactor to accept an array? especially for non-integer speed multipliers?
+                            // , *self->out_buf_ix // FIXME do we need to refactor to accept an array? especially for non-integer speed multipliers?
+                            , obuf_ix // FIXME do we need to refactor to accept an array? especially for non-integer speed multipliers?
                             , nframes_dir
                             , self->map );
             } else { // no custom map map fn
                 buffer_mac_v( buf
-                            , self->out_buf // the data to be written to the buffer_t
-                            , *self->out_buf_ix // FIXME see above
+                            // , self->out_buf // the data to be written to the buffer_t
+                            , obuf // the data to be written to the buffer_t
+                            // , *self->out_buf_ix // FIXME see above
+                            , obuf_ix // FIXME see above
                             , nframes_dir
                             , self->pre_level );
             }
         }
-    // FIXME refactor with queue
-        for( int i=0; i<REC_OFFSET_2*2; i++ ){
-            self->out_buf[i] = self->out_buf[i+nframes];
-            self->out_buf_ix[i] = self->out_buf_ix[i+nframes];
-        }
+    // // FIXME refactor with queue
+    //     for( int i=0; i<REC_OFFSET_2*2; i++ ){
+    //         self->out_buf[i] = self->out_buf[i+nframes];
+    //         self->out_buf_ix[i] = self->out_buf_ix[i+nframes];
+    //     }
     }
 }
 
@@ -279,8 +298,9 @@ static int write( ihead_t* self, float rate, float input )
         while(i < new_frames) {
             // distance between output frames in this normalized space is 1/rate
 // FIXME refactor with queue
-            self->out_buf[i+REC_OFFSET_2] = interp_hermite_4pt( f, &(pushed_buf[1]) );
-            self->out_buf_ix[i+REC_OFFSET_2] = self->wphase_1.i + (i*dir_mul);
+            int bix = queue_enqueue( self->q_out_buf );
+            self->out_buf[bix] = interp_hermite_4pt( f, &(pushed_buf[1]) );
+            self->out_buf_ix[bix] = self->wphase_1.i + (i*dir_mul);
             f += phi;
             i++;
         }

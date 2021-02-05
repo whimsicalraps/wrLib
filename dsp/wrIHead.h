@@ -3,6 +3,7 @@
 #include "wrPhase.h" // phase_t and ops
 #include "wrBuffer.h"
 #include "wrFilter.h"
+#include "wrQueue.h"
 
 #define OUT_BUF_LEN 16 // defines maximum speed
 
@@ -11,6 +12,7 @@ typedef struct{
     float in_buf[4];
     int   in_buf_ix; // 'phase' but always advances by 1
 
+    queue_t* q_out_buf;
     float out_buf[OUT_BUF_LEN];
     int   out_buf_ix[OUT_BUF_LEN];
 
