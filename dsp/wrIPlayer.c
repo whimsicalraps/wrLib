@@ -289,24 +289,24 @@ static void edge_checks( player_t* self )
         phase_t new_phase = ihead_fade_get_location( self->head );
         phase_t pend = self->tape_end_lead;
         phase_t pstart = self->tape_start_lead;
-        // phase_t psize = self->tape_size; // end-start -2*LEADIN (for exact jumps only)
+        phase_t psize = self->tape_size; // end-start -2*LEADIN (for exact jumps only)
         phase_t jumpto = phase_null();
         // NB: exact jumps are commented out as they sound worse. seems the jitter around the loop point worsens clicks
         // Always test for tape edges before loop (incase of UNLOOP over the join)
 
         if( phase_gte( new_phase, pend ) ){
-            jumpto = pstart;
-            // jumpto = phase_sub( new_phase, psize );
+            // jumpto = pstart;
+            jumpto = phase_sub( new_phase, psize );
         } else if( phase_lt( new_phase, pstart ) ){
-            jumpto = pend;
-            // jumpto = phase_add( new_phase, psize );
+            // jumpto = pend;
+            jumpto = phase_add( new_phase, psize );
         } else if( self->loop == 1 ){ // LOOP
             if( phase_gte( new_phase, self->o_loop_end ) ){
-                jumpto = self->o_loop_start;
-                // jumpto = phase_sub( new_phase, self->loop_size );
+                // jumpto = self->o_loop_start;
+                jumpto = phase_sub( new_phase, self->loop_size );
             } else if( phase_lt( new_phase, self->o_loop_start ) ){
-                jumpto = self->o_loop_end;
-                // jumpto = phase_add( new_phase, self->loop_size );
+                // jumpto = self->o_loop_end;
+                jumpto = phase_add( new_phase, self->loop_size );
             }
         } else if( self->loop == 2 ){ // UNLOOP
             if( phase_gt( new_phase, self->o_loop_start )
@@ -315,11 +315,11 @@ static void edge_checks( player_t* self )
                 phase_t sdiff = phase_sub( new_phase, self->o_loop_start );
                 phase_t ediff = phase_sub( self->o_loop_end, new_phase );
                 if( phase_gt( sdiff, ediff ) ){ // close to end
-                    jumpto = self->o_loop_start;
-                    // jumpto = phase_sub( self->o_loop_start, ediff );
+                    // jumpto = self->o_loop_start;
+                    jumpto = phase_sub( self->o_loop_start, ediff );
                 } else { // close to start
-                    jumpto = self->o_loop_end;
-                    // jumpto = phase_add( self->o_loop_end, sdiff );
+                    // jumpto = self->o_loop_end;
+                    jumpto = phase_add( self->o_loop_end, sdiff );
                 }
             }
         }
