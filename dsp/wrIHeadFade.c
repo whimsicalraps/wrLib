@@ -29,9 +29,11 @@ ihead_fade_t* ihead_fade_init( Buf_Map_Type_t map_type )
     self->head[1] = ihead_init( map_type );
 
     self->fade_active_head = 0;
-    self->fade_phase = 0.0;
+    self->fade_phase_r = 0.0;
+    self->fade_phase_w = 0.0;
     self->fade_increment = 0.1;
-    self->fade_countdown = 0;
+    self->fade_countdown_r = 0;
+    self->fade_countdown_w = 0;
     self->rec_slew = lp1_init();
     self->pre_slew = lp1_init();
     lp1_set_coeff( self->rec_slew, 0.01 ); // TODO configure slew time
@@ -101,9 +103,11 @@ void ihead_fade_jumpto( ihead_fade_t* self, buffer_t* buf, phase_t phase, bool i
         self->fade_active_head ^= 1; // flip active head
         ihead_jumpto( self->head[self->fade_active_head], buf, phase, is_forward );
         // initiate the xfade
-        self->fade_phase = 0.0;
+        self->fade_phase_r = 0.0;
+        self->fade_phase_w = 0.0;
         float count = self->fade_length * 48000.0; // FIXME assume 48kHz samplerate
-        self->fade_countdown = (int)count;
+        self->fade_countdown_r = (int)count;
+        self->fade_countdown_w = (int)count;
 
     // FIXME rather than set to a value, copy the filter output from the active head into new-active head
             // nb: the below function isn't hooked up atm.
@@ -153,14 +157,15 @@ void ihead_fade_poke( ihead_fade_t*  self
         float p = lp1_get_out( self->pre_slew );
     // filter
         // float c = self->fade_pre_filter;
-        if( self->fade_countdown > 0 ){
+        if( self->fade_countdown_w > 0 ){
             ihead_t* hB = self->head[!self->fade_active_head];
-            float mphase = 1.0 - self->fade_phase;
+            self->fade_phase_w += self->fade_increment;
+            float mphase = 1.0 - self->fade_phase_w;
 
             // fade out
             ihead_rec_level( hB, r * rec_fade_LUT_get( mphase ) );
         // deactivated pre_fade
-            // float lut = pre_fade_LUT_get(self->fade_phase);
+            // float lut = pre_fade_LUT_get(self->fade_phase_w);
             // float xf = 1.0 + lut*(p - 1.0);
             // ihead_pre_level( hB, xf);
             ihead_pre_level( hB, p);
@@ -170,7 +175,7 @@ void ihead_fade_poke( ihead_fade_t*  self
             ihead_poke( hB, buf, speed, input );
 
             // fade in
-            ihead_rec_level( hA, r * rec_fade_LUT_get(self->fade_phase) );
+            ihead_rec_level( hA, r * rec_fade_LUT_get(self->fade_phase_w) );
         // deactivated pre_fade
             // lut = pre_fade_LUT_get( mphase );
             // xf = 1.0 + lut*(p - 1.0);
@@ -180,6 +185,7 @@ void ihead_fade_poke( ihead_fade_t*  self
             // xf = 1.0 + lut*(c - 1.0);
             // ihead_pre_filter( hA, xf );
             ihead_poke( hA, buf, speed, input );
+            self->fade_countdown_w--;
         } else { // single head
             ihead_rec_level( hA, r );
             ihead_pre_level( hA, p );
@@ -193,18 +199,18 @@ void ihead_fade_poke( ihead_fade_t*  self
 float ihead_fade_peek( ihead_fade_t* self, buffer_t* buf, float speed )
 {
     float o;
-    if( self->fade_countdown > 0 ){
+    if( self->fade_countdown_r > 0 ){
         ihead_t* h_out = self->head[!self->fade_active_head ];
         ihead_t* h_in  = self->head[ self->fade_active_head ];
 
         float out = ihead_peek( h_out, buf, speed );
         float in  = ihead_peek( h_in, buf, speed );
 
-        self->fade_phase += self->fade_increment; // move through xfade
-        o  = out * equal_power_LUT_get(1.0 - self->fade_phase);
-        o += in * equal_power_LUT_get(self->fade_phase);
+        self->fade_phase_r += self->fade_increment; // move through xfade
+        o  = out * equal_power_LUT_get(1.0 - self->fade_phase_r);
+        o += in * equal_power_LUT_get(self->fade_phase_r);
 
-        self->fade_countdown--;
+        self->fade_countdown_r--;
 
     } else { // single head
         ihead_t* h = self->head[ self->fade_active_head ];
@@ -218,7 +224,7 @@ float* ihead_fade_peek_v( ihead_fade_t* self, float*    io
                                             , float*    motion
                                             , int       size )
 {
-    if( self->fade_countdown >= size ){ // not end of xfade, assume countdown > 0
+    if( self->fade_countdown_r >= size ){ // not end of xfade, assume countdown > 0
         ihead_t* h_out = self->head[!self->fade_active_head ];
         ihead_t* h_in  = self->head[ self->fade_active_head ];
 
@@ -231,14 +237,14 @@ float* ihead_fade_peek_v( ihead_fade_t* self, float*    io
 
 // FIXME doing this here means it will be static block_size steps for poke?!?!?!?
 
-            self->fade_phase += self->fade_increment; // move through xfade
-            io[i]  = fadeout[i] * equal_power_LUT_get(1.0 - self->fade_phase);
-            io[i] += fadein[i] * equal_power_LUT_get(self->fade_phase);
+            self->fade_phase_r += self->fade_increment; // move through xfade
+            io[i]  = fadeout[i] * equal_power_LUT_get(1.0 - self->fade_phase_r);
+            io[i] += fadein[i] * equal_power_LUT_get(self->fade_phase_r);
         }
-        self->fade_countdown -= size;
-    } else if( self->fade_countdown > 0 ){ // half & half. split & recurse
-        int fade_count = self->fade_countdown; // save a copy (it will change)
-        ihead_fade_peek_v( self, io, buf, motion, self->fade_countdown );
+        self->fade_countdown_r -= size;
+    } else if( self->fade_countdown_r > 0 ){ // half & half. split & recurse
+        int fade_count = self->fade_countdown_r; // save a copy (it will change)
+        ihead_fade_peek_v( self, io, buf, motion, self->fade_countdown_r );
         ihead_fade_peek_v( self, &io[fade_count], buf
                          , &motion[fade_count], size - fade_count );
     } else {
@@ -263,18 +269,20 @@ void ihead_fade_poke_v( ihead_fade_t*  self, buffer_t* buf
             ihead_t* hA = self->head[self->fade_active_head];
             float r = lp1_step_internal( self->rec_slew );
             float p = lp1_step_internal( self->pre_slew );
-            if( self->fade_countdown > 0 ){
+            if( self->fade_countdown_w > 0 ){
                 ihead_t* hB = self->head[!self->fade_active_head];
-                float mphase = 1.0 - self->fade_phase;
+                self->fade_phase_w += self->fade_increment;
+                float mphase = 1.0 - self->fade_phase_w;
+                // if( self->fade_length > 0.005 ){
                 if( self->fade_length > 0.005 ){
                     // fade out
                     ihead_rec_level( hB, r * rec_fade_LUT_get( mphase ) );
-                    float lut = pre_fade_LUT_get(self->fade_phase);
+                    float lut = pre_fade_LUT_get(self->fade_phase_w);
                     float xf = 1.0 + lut*(p - 1.0);
                     ihead_pre_level( hB, xf);
                     ihead_poke( hB, buf, motion[i], io[i] );
                     // fade in
-                    ihead_rec_level( hA, r * rec_fade_LUT_get(self->fade_phase) );
+                    ihead_rec_level( hA, r * rec_fade_LUT_get(self->fade_phase_w) );
                     lut = pre_fade_LUT_get( mphase );
                     xf = 1.0 + lut*(p - 1.0);
                     ihead_pre_level( hA, xf);
@@ -285,10 +293,11 @@ void ihead_fade_poke_v( ihead_fade_t*  self, buffer_t* buf
                     ihead_pre_level( hB, p);
                     ihead_poke( hB, buf, motion[i], io[i] );
                     // fade in
-                    ihead_rec_level( hA, r * rec_fade_LUT_get(self->fade_phase) );
+                    ihead_rec_level( hA, r * rec_fade_LUT_get(self->fade_phase_w) );
                     ihead_pre_level( hA, p);
                     ihead_poke( hA, buf, motion[i], io[i] );
                 }
+                self->fade_countdown_w--;
             } else { // single head
                 ihead_rec_level( hA, r );
                 ihead_pre_level( hA, p );

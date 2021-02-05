@@ -17,9 +17,11 @@ typedef struct{
     // private
     ihead_t* head[2];
     int      fade_active_head;
-    float    fade_phase;
+    float    fade_phase_r;
+    float    fade_phase_w;
     float    fade_increment; // 0-1 normalized per-sample
-    int      fade_countdown;
+    int      fade_countdown_r;
+    int      fade_countdown_w;
     filter_lp1_t* rec_slew;
     filter_lp1_t* pre_slew;
     bool     fade_recording_dest; // recording state destination
