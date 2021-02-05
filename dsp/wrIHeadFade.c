@@ -266,20 +266,29 @@ void ihead_fade_poke_v( ihead_fade_t*  self, buffer_t* buf
             if( self->fade_countdown > 0 ){
                 ihead_t* hB = self->head[!self->fade_active_head];
                 float mphase = 1.0 - self->fade_phase;
-
-                // fade out
-                ihead_rec_level( hB, r * rec_fade_LUT_get( mphase ) );
-                float lut = pre_fade_LUT_get(self->fade_phase);
-                float xf = 1.0 + lut*(p - 1.0);
-                ihead_pre_level( hB, xf);
-                ihead_poke( hB, buf, motion[i], io[i] );
-
-                // fade in
-                ihead_rec_level( hA, r * rec_fade_LUT_get(self->fade_phase) );
-                lut = pre_fade_LUT_get( mphase );
-                xf = 1.0 + lut*(p - 1.0);
-                ihead_pre_level( hA, xf);
-                ihead_poke( hA, buf, motion[i], io[i] );
+                if( self->fade_length > 0.005 ){
+                    // fade out
+                    ihead_rec_level( hB, r * rec_fade_LUT_get( mphase ) );
+                    float lut = pre_fade_LUT_get(self->fade_phase);
+                    float xf = 1.0 + lut*(p - 1.0);
+                    ihead_pre_level( hB, xf);
+                    ihead_poke( hB, buf, motion[i], io[i] );
+                    // fade in
+                    ihead_rec_level( hA, r * rec_fade_LUT_get(self->fade_phase) );
+                    lut = pre_fade_LUT_get( mphase );
+                    xf = 1.0 + lut*(p - 1.0);
+                    ihead_pre_level( hA, xf);
+                    ihead_poke( hA, buf, motion[i], io[i] );
+                } else { // short delay times have no rec-fade
+                    // fade out
+                    ihead_rec_level( hB, r * rec_fade_LUT_get( mphase ) );
+                    ihead_pre_level( hB, p);
+                    ihead_poke( hB, buf, motion[i], io[i] );
+                    // fade in
+                    ihead_rec_level( hA, r * rec_fade_LUT_get(self->fade_phase) );
+                    ihead_pre_level( hA, p);
+                    ihead_poke( hA, buf, motion[i], io[i] );
+                }
             } else { // single head
                 ihead_rec_level( hA, r );
                 ihead_pre_level( hA, p );
