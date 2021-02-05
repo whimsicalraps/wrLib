@@ -115,11 +115,11 @@ void player_nudge( player_t* self, int amount ){
 }
 void player_recording( player_t* self, bool is_record ){
     ihead_fade_recording( self->head, is_record );
-    // if( is_record ){ // realign write head when activating write
-    //     ihead_fade_align( self->head
-    //                     , (transport_get_speed_live( self->transport ) >= 0.0 )
-    //                     );
-    // }
+    if( is_record ){ // realign write head when activating write
+        ihead_fade_align( self->head
+                        , (transport_get_speed_live( self->transport ) >= 0.0 )
+                        );
+    }
 }
 void player_rec_level( player_t* self, float rec_level ){
     ihead_fade_rec_level( self->head, rec_level );

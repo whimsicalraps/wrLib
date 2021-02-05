@@ -134,7 +134,10 @@ void ihead_poke( ihead_t* self, buffer_t* buf
                               , float     speed
                               , float     input )
 {
-    sync_wphase( self, self->rphase ); // rphase & wphase are locked together
+    // sync to self + speed
+    // goto will lock them together
+    sync_wphase( self, phase_add( self->wphase, phase_from_double(speed) ) );
+
     int nframes = write( self, speed, input * self->rec_level );
     if( nframes ){
         int nframes_dir = (speed >= 0.0) ? nframes : -nframes;
@@ -186,12 +189,8 @@ float ihead_peek( ihead_t* self, buffer_t* buf, float speed )
     buffer_peek_v( buf, samps, (self->rphase.i)-1, 4 );
     float out = interp_hermite_4pt( self->rphase.f, &samps[1] );
 
-    // update phase
-    // TODO use phase_add
-    phase_t* p = &(self->rphase);
-    p->f += speed;
-    while( p->f >= 1.0 ){ p->i++; p->f -= 1.0; }
-    while( p->f <  0.0 ){ p->i--; p->f += 1.0; }
+    // increment phase
+    self->rphase = phase_add( self->rphase, phase_from_double(speed) );
 
     return out;
 }

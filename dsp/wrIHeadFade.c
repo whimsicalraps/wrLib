@@ -228,6 +228,9 @@ float* ihead_fade_peek_v( ihead_fade_t* self, float*    io
         ihead_peek_v( h_in, fadein, buf, motion, size );
 
         for( int i=0; i<size; i++ ){
+
+// FIXME doing this here means it will be static block_size steps for poke?!?!?!?
+
             self->fade_phase += self->fade_increment; // move through xfade
             io[i]  = fadeout[i] * equal_power_LUT_get(1.0 - self->fade_phase);
             io[i] += fadein[i] * equal_power_LUT_get(self->fade_phase);
