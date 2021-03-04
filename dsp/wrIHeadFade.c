@@ -118,9 +118,9 @@ void ihead_fade_jumpto( ihead_fade_t* self, buffer_t* buf, phase_t phase, bool i
     }
 }
 
-void ihead_fade_align( ihead_fade_t* self, bool is_forward ){
-    ihead_align( self->head[0], is_forward );
-    ihead_align( self->head[1], is_forward );
+void ihead_fade_align( ihead_fade_t* self ){
+    ihead_align( self->head[0] );
+    ihead_align( self->head[1] );
 }
 
 

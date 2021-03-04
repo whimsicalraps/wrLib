@@ -116,9 +116,8 @@ void ihead_jumpto( ihead_t* self, buffer_t* buf, phase_t phase, bool is_forward 
     self->rphase = phase;
     sync_wphase( self, self->rphase ); // TODO unnecessary?
 }
-void ihead_align( ihead_t* self, bool is_forward ){
-    // sync_wphase(self, self->rphase); // should be unnecessary!
-    // sync_wphase(self, self->rphase); // should be unnecessary!
+void ihead_align( ihead_t* self ){
+    sync_wphase(self, self->rphase);
 }
 
 
