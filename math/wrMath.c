@@ -13,27 +13,34 @@ void math_get_ramps( float skew, float* rise, float* fall )
 	*fall = 1.0f/ (2.0f - (1.0f / *rise));
 }
 
+// DEPRECATED
 float max_f(float a, float b) {
-	return (a > b ? a : b);
+	// return (a > b ? a : b);
+	return fmaxf(a,b);
 }
 
+// DEPRECATED
 float min_f(float a, float b) {
-	return (a < b ? a : b);
+	// return (a < b ? a : b);
+	return fminf(a,b);
 }
 
 float lim_f(float in, float min, float max)
 {
-	return (in < min ? min : in > max ? max : in);
+	// return (in < min ? min : in > max ? max : in);
+	return fmaxf(min, fminf(in,max));
 }
 
 float lim_f_0_1(float in)
 {
-	return (in < 0.0f ? 0.0f : in > 1.0f ? 1.0f : in);
+	return fmaxf(0.0, fminf(in,1.0));
+	// return (in < 0.0f ? 0.0f : in > 1.0f ? 1.0f : in);
 }
 
 float lim_f_n1_1(float in)
 {
-	return (in < -1.0f ? -1.0f : in > 1.0f ? 1.0f : in);
+	return fmaxf(-1.0, fminf(in,1.0));
+	// return (in < -1.0f ? -1.0f : in > 1.0f ? 1.0f : in);
 }
 
 float wrap_f(float in, float min, float max) {
@@ -193,7 +200,8 @@ void muladd_vf_f_f(float* vin, float mul, float add, float* product, uint16_t si
 	float* product2=product; // point to start of arrays
 
 	for(uint16_t i=0; i<size; i++) {
-		*product2++ = (*vin2++) * mul + add;
+		// *product2++ = (*vin2++) * mul + add;
+		*product2++ = fmaf(*vin2++, mul, add);
 	}
 }
 void muladd_vf_f_vf(float* vin, float mul, float* vadd, float* product, uint16_t size) {
@@ -202,7 +210,8 @@ void muladd_vf_f_vf(float* vin, float mul, float* vadd, float* product, uint16_t
 	float* product2=product; // point to start of arrays
 
 	for(uint16_t i=0; i<size; i++) {
-		*product2++ = (*vin2++) * mul + (*vadd2++);
+		// *product2++ = (*vin2++) * mul + (*vadd2++);
+		*product2++ = fmaf(*vin2++, mul, *vadd2++);
 	}
 }
 void mac_vf_f_vf(float* vmul, float mul, float* vadd, uint16_t size) {
@@ -210,7 +219,9 @@ void mac_vf_f_vf(float* vmul, float mul, float* vadd, uint16_t size) {
 	float* vadd2=vadd; // point to start of arrays
 
 	for(uint16_t i=0; i<size; i++) {
-		(*vadd2++) += (*vmul2++) * mul;
+		// (*vadd2++) += (*vmul2++) * mul;
+		*vadd2 = fmaf(*vmul2++, mul, *vadd2);
+		vadd2++;
 	}
 }
 
