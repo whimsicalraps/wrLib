@@ -7,7 +7,7 @@
 
 
 #define NUDGE_RATIO_PUSH (3.0/2.0)
-#define NUDGE_RATIO_PULL (2.0/3.0)
+#define NUDGE_RATIO_PULL (3.0/4.0)
 
 
 ///////////////////////////////
