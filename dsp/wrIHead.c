@@ -78,7 +78,7 @@ void ihead_rec_level( ihead_t* self, float level ){
     self->rec_level = level;
 }
 void ihead_pre_level( ihead_t* self, float level ){
-    self->pre_level = level; // TODO deprecated. only used for query.
+    self->pre_level = level;
     //buf_map_gain_pre_level( self->map, level );
     if( self->map ){ // custom map
         switch( self->map->type ){
