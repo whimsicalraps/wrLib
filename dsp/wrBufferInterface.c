@@ -144,7 +144,7 @@ static void _poke_v( buffer_interface_t* self
         origin += dir;
     }
 }
-
+#include <math.h>
 static void _mac_v( buffer_interface_t* self
            , float* io
            , int origin
@@ -160,7 +160,8 @@ static void _mac_v( buffer_interface_t* self
         while( origin < 0 ){ origin += self->buf->len; }
         while( origin >= self->buf->len ){ origin -= self->buf->len; }
         float bs = buffer[origin];
-        buffer[origin] = *s++ + bs*coeff;
+        // buffer[origin] = *s++ + bs*coeff;
+        buffer[origin] = fmaf(bs,coeff,*s++); // as above but uses hardware MAC
         origin += dir;
     }
 }

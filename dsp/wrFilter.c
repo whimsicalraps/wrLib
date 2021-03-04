@@ -41,6 +41,7 @@ float lp1_get_out( filter_lp1_t* f )
 float lp1_step(filter_lp1_t* f, float in)
 {
 	f->y = f->y + f->c * (in - f->y);
+    // f->y = fmaf(f->c, in - f->y, f->y);
 	return f->y;
 }
 uint8_t lp1_converged( filter_lp1_t* f )
