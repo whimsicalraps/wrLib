@@ -98,12 +98,12 @@ void transport_nudge( transport_t* self, Transport_Nudge_t n )
         case Transport_Nudge_Rewind:
             slope_goto( self->wind_slope, -2.0, 72000 ); break;
         case Transport_Nudge_Pull:
-            slope_goto( self->nudge_slope, NUDGE_RATIO_PULL, 300 ); break;
+            slope_goto( self->nudge_slope, NUDGE_RATIO_PULL, 8000 ); break;
         case Transport_Nudge_None:
             slope_goto( self->wind_slope, 0.0, 6000 );
-            slope_goto( self->nudge_slope, 1.0, 50 ); break;
+            slope_goto( self->nudge_slope, 1.0, 500 ); break;
         case Transport_Nudge_Push:
-            slope_goto( self->nudge_slope, NUDGE_RATIO_PUSH, 300 ); break;
+            slope_goto( self->nudge_slope, NUDGE_RATIO_PUSH, 8000 ); break;
         case Transport_Nudge_FastForward:
             slope_goto( self->wind_slope, 2.0, 72000 ); break;
     }
