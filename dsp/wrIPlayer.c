@@ -341,6 +341,8 @@ float player_step( player_t* self, float in )
         player_goto( self, player_get_goto(self) ); // reset head offset
     }
 
+    // TODO add volume fade-out as speed approaches 0
+
     float out = ihead_fade_peek( self->head, self->buf, motion );
     ihead_fade_poke( self->head
                    , self->buf
@@ -369,6 +371,18 @@ float* player_step_v( player_t* self, float* io, int size )
         if( last_dir != (motion[size-1] >= 0) ){ // speed sign change this block
             player_goto( self, player_get_goto(self) ); // use the newest speed samp
             // FIXME will this cause it to jump by block_size samples?
+        }
+
+        // fade-out signal as it approaches 'stopped'
+        /// should reduce artifacts when stopping the tape while recording
+        //// it's subtle but removes some of the thwack especially on the start point
+        const float VOLUME_THRESHOLD = 1.0/10.0; // check if the block started less that 10%
+        const float iVOLUME_DROP = 16.0; // but only fade out if per-sample speed < 6%
+        if( motion[0] < VOLUME_THRESHOLD && motion[0] > -VOLUME_THRESHOLD ){ // very slow speed
+            for( int i=0; i<size; i++ ){
+                float scale = fminf( 1.0, fabsf( motion[i] * iVOLUME_DROP ) );
+                io[i] *= scale;
+            }
         }
 
         float outie[size];
