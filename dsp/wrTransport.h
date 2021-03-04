@@ -34,6 +34,7 @@ typedef struct{
     float         speed;
     float         offset; // operates regardless of active state
 
+    slope_t*          wind_slope;
     slope_t*          nudge_slope;
     Transport_Nudge_t nudge;
 } transport_t;

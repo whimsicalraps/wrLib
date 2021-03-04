@@ -3,6 +3,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "../math/wrMath.h"
+#include <math.h>
+
+
+#define NUDGE_RATIO_PUSH (3.0/2.0)
+#define NUDGE_RATIO_PULL (2.0/3.0)
 
 
 ///////////////////////////////
@@ -30,6 +35,7 @@ transport_t* transport_init( void )
     );
 
     self->speed_slew  = lp1_init();
+    self->wind_slope = slope_init();
     self->nudge_slope = slope_init();
     transport_active( self, false, self->speeds.accel_standard );
     transport_speed( self, 1.0 );
@@ -90,15 +96,16 @@ void transport_nudge( transport_t* self, Transport_Nudge_t n )
 {
     switch( n ){
         case Transport_Nudge_Rewind:
-            slope_goto( self->nudge_slope, -2.0, 48000 ); break;
+            slope_goto( self->wind_slope, -2.0, 72000 ); break;
         case Transport_Nudge_Pull:
-            slope_goto( self->nudge_slope, -0.1, 24000 ); break;
+            slope_goto( self->nudge_slope, NUDGE_RATIO_PULL, 300 ); break;
         case Transport_Nudge_None:
-            slope_goto( self->nudge_slope, 0.0, 24000 ); break;
+            slope_goto( self->wind_slope, 0.0, 6000 );
+            slope_goto( self->nudge_slope, 1.0, 50 ); break;
         case Transport_Nudge_Push:
-            slope_goto( self->nudge_slope, 0.1, 24000 ); break;
+            slope_goto( self->nudge_slope, NUDGE_RATIO_PUSH, 300 ); break;
         case Transport_Nudge_FastForward:
-            slope_goto( self->nudge_slope, 2.0, 48000 ); break;
+            slope_goto( self->wind_slope, 2.0, 72000 ); break;
     }
 }
 
@@ -119,10 +126,16 @@ float transport_get_speed_live( transport_t* self ){
 
 float transport_speed_step( transport_t* self )
 {
+    float speed;
+    if( transport_is_active(self) ){ // musical nudge
+        speed = fmaf( slope_step( self->nudge_slope )
+                    , transport_get_speed(self)
+                    , self->offset );
+    } else { // transport is stopped, linear speed windup
+        speed = self->offset + slope_step( self->wind_slope );
+    }
     return lp1_step( self->speed_slew
-                   , lim_f( get_speed_active( self )
-                            + self->offset
-                            + slope_step( self->nudge_slope )
+                   , lim_f( speed
                           , -self->speeds.max_speed
                           , self->speeds.max_speed
                           )
