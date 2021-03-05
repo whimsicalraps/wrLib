@@ -71,9 +71,14 @@ void vtl_params( vtl_t* self
 void vtl_dest( vtl_t* self
              , float dest
              ){
-    self->dest = dest; // set destination value
+    if( dest < self->level
+     && self->mode != vtl_mode_sustain ){ // just treat it as a new release as we have to go downward anyway
+        self->dest = 0.0;
+    } else {
+        self->dest = dest; // set destination value
+    }
 
-    if(dest > nFloor) {
+    if( dest > nFloor ){
         self->vel = dest; // treat as 'velocity' input
     }
 }
@@ -161,12 +166,18 @@ float* vtl_step_v( vtl_t* self
 					self->dest = self->vel;
 					slew_fix = self->rtime;
 				}
-			} else { // hit bottom
-				for( i=0; i<b_size; i++ ){
-					*out2++ = self->dest;
-				}
-				self->level = self->dest;
-				return out; // EARLY EXIT
+			} else { // hit dest
+                if( self->dest == 0.0                 // dest was 'off' so we've reached the bottom
+                 || self->mode == vtl_mode_sustain ){ // or sustaining, so filling at the sustain level
+    				for( i=0; i<b_size; i++ ){
+    					*out2++ = self->dest;
+    				}
+    				self->level = self->dest;
+    				return out; // EARLY EXIT
+                } else { // hit the peak from above, so now decay toward zero
+                    self->dest = 0.0;
+                    slew_fix = self->ftime;
+                }
 			}
 		} else { // normal falling
 			slew_fix = self->ftime;
@@ -207,13 +218,19 @@ float* vtl_step_v( vtl_t* self
 						self->dest = self->vel;
 						slew_fix = self->rtime;
 					}
-				} else { // hit bottom
-					while( i++ < b_size ){
-						*out2++ = self->dest;
-					}
-					self->level = self->dest;
-					return out; // EARLY EXIT
-				}
+                } else { // hit dest
+                    if( self->dest == 0.0                 // dest was 'off' so we've reached the bottom
+                     || self->mode == vtl_mode_sustain ){ // or sustaining, so filling at the sustain level
+                        while( i++ < b_size ){
+                            *out2++ = self->dest;
+                        }
+                        self->level = self->dest;
+                        return out; // EARLY EXIT
+                    } else { // hit the peak from above, so now decay toward zero
+                        self->dest = 0.0;
+                        slew_fix = self->ftime;
+                    }
+                }
 			} else { // normal falling
 				slew_fix = self->ftime;
 			}
@@ -243,5 +260,3 @@ static void vtl_update_params( vtl_t* self )
     self->rtime *= ttime;
     self->ftime *= ttime;
 }
-
-
