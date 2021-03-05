@@ -33,11 +33,11 @@ float* compress_step_v(compress_t* self, float* io, int size)
         // TODO soft-knee non-linearity
         // sc = 0.45*sc; // just slightly below clipping
         sc = 2.5*sc;
-        float PRE = sc;
+        // float PRE = sc;
         // sc = (sc > 0.55) ? 0.55 : sc; // make sure we don't apply inverse gain
         // dual-k 1pole lowpass
         sc = fminf(1.0, lp1_a_step( self->lp1, sc ));
-        float SMOOTH = sc;
+        // float SMOOTH = sc;
         // convert from gain-reduction to gain-level
         sc = 1.0 - (sc*0.72); // reduces limit to 0.5x gain
         sc = fmaxf(0.5,sc);
