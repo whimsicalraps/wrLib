@@ -23,7 +23,6 @@ typedef struct poly_alloc{
 	uint8_t* busy_list;
 	
 	uint8_t  free_count;
-	int16_t  free_first;
 	uint8_t* free_queue;
 } poly_alloc_t;
 

@@ -3,8 +3,18 @@
 #include <stdlib.h>
 #include <stdio.h> // printf
 
+
+
+// FIXME
+// list/queue logic is dumb
+// refactor it with linked-lists for speed
+
+
+
 // private declarations
+
 void _free_voice( poly_alloc_t* self
+				, uint8_t       index // into the busy_list
                 , uint8_t       voice
                 );
 int8_t _assign_voice( poly_alloc_t* self
@@ -27,12 +37,11 @@ poly_alloc_t* poly_init( uint8_t voice_count )
 	self->busy_list   = malloc(sizeof(uint8_t) * voice_count);
 
 	self->free_count  = voice_count;
-	self->free_first  = 0;
 	self->free_queue  = malloc(sizeof(uint8_t) * voice_count);
 	for( uint8_t i=0; i<voice_count; i++ ){
 		self->notes[i]      = 0x8000;
 		self->busy_list[i]  = 255;
-		self->free_queue[i] = 255;
+		self->free_queue[i] = i;
 	}
     return self;
 }
@@ -69,51 +78,50 @@ int8_t poly_kill_note( poly_alloc_t* self
 	if( note == (int16_t)0x8000 ){ return -1; } // invalid pitch
 	
 	// search for match in self->notes
-	for( uint8_t i=0; i < self->voice_count; i++){
-		if(note == self->notes[i]){ // found, so kill this
-			_free_voice( self, i);
-			return i;
+	for( uint8_t i=0; i<(self->busy_count); i++){
+		uint8_t voice = self->busy_list[i];
+		if(note == self->notes[voice]){ // note found in busy_list
+			_free_voice( self, i, voice);
+			return voice;
 		}
 	}
 	return -1;
 }
 
 void _free_voice( poly_alloc_t* self
+				, uint8_t       index // into the busy_list
                 , uint8_t       voice
                 )
 {
 	// forget pitch
-	self->notes[voice] = 0x8000;
+	self->notes[voice] = (int16_t)0x8000; // invalid pitch
 
-	// rm note from busy list (maintains age sorting)
-		// matches first occurance, not oldest, for duplicate pitches
-	uint8_t i = 0;
-	while( voice != self->busy_list[i] ){ i++; }
-	for(; i < (--self->busy_count); i++){
+	// shuffle busy_list forward
+	self->busy_count--;
+	for( int i=index; i<(self->busy_count); i++ ){
 		self->busy_list[i] = self->busy_list[i+1];
 	}
 
-	// enqueue note into free queue
-	// add check for full-queue (shouldn't happen)
-	uint8_t ix = (self->free_first + self->free_count++) % self->voice_count;
-	self->free_queue[ix] = voice;
+	self->free_queue[self->free_count] = voice;
+	self->free_count++;
 }
 
 int8_t _assign_voice( poly_alloc_t* self
 	                , int16_t       note
 	                )
 {
-	int8_t voice;
- 	
- 	// dequeue voice from free
-	voice = self->free_first++;
-	if(self->free_first >= self->voice_count){
-		self->free_first = 0;
+	// take the front of the free queue (oldest)
+	int8_t voice = self->free_queue[0];
+	self->free_count--; // we took a voice
+	// shift list forward
+		// refactor to linked-list
+	for( uint8_t i=0; i<(self->free_count); i++ ){
+		self->free_queue[i] = self->free_queue[i+1];
 	}
-	self->free_count--;
 
- 	// add busy voice to end of list
-	self->busy_list[self->busy_count++] = voice;
+ 	// add voice to end of busy_list
+	self->busy_list[self->busy_count] = voice;
+	self->busy_count++; // increase count
 
  	// save pitch
  	self->notes[voice] = note;
@@ -122,21 +130,20 @@ int8_t _assign_voice( poly_alloc_t* self
  	return voice;
 }
 
+// steals front of busy_list and rotates it to the back of the list
 int8_t _steal_voice( poly_alloc_t* self
 	               , int16_t       note
 	               )
 {
-	int8_t voice;
-
 	// steal front of busy list
-	voice = self->busy_list[0];
+	int8_t voice = self->busy_list[0];
 
-	// shift list forward (ouch..)
-		// want to do a queue, but it varies in length?
-	for( uint8_t i=0; i < (self->voice_count-1); i++ ){
+	// shift list forward
+		// refactor to linked-list
+	for( uint8_t i=0; i<(self->busy_count-1); i++ ){
 		self->busy_list[i] = self->busy_list[i+1];
 	}
-	self->busy_list[self->voice_count-1] = voice;
+	self->busy_list[self->busy_count-1] = voice; // shifts new voice to end of list
 
 	// save pitch
 	self->notes[voice] = note;
