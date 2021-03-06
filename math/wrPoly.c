@@ -9,6 +9,10 @@
 // list/queue logic is dumb
 // refactor it with linked-lists for speed
 
+// FIXME FIXME FIXME FIXME FIXME FIXME FIXME FIXME FIXME FIXME FIXME FIXME 
+// i already fucking fixed this shit in the JF3 branch.
+// FML
+
 
 
 // private declarations
