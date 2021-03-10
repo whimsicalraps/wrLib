@@ -44,6 +44,7 @@ delay_t* delay_init( Buf_Type_t type, int samples )
     player_head_order( self->play, true );
 
     // params
+    self->mod = 0.0;
     delay_rate( self, 1.0 );
     delay_feedback( self, 0.8 );
 
