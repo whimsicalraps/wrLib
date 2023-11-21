@@ -277,7 +277,7 @@ void ihead_fade_poke_v( ihead_fade_t*  self, buffer_t* buf
                 if( self->fade_length > 0.005 ){
                     // fade out
                     ihead_rec_level( hB, r * rec_fade_LUT_get( mphase ) );
-                    float lut = pre_fade_LUT_get(self->fade_phase_w);
+                    //float lut = pre_fade_LUT_get(self->fade_phase_w);
 
                     //float xf = 1.0 + lut*(p - 1.0);
                     //ihead_pre_level( hB, xf);
@@ -286,7 +286,7 @@ void ihead_fade_poke_v( ihead_fade_t*  self, buffer_t* buf
                     ihead_poke( hB, buf, motion[i], io[i] );
                     // fade in
                     ihead_rec_level( hA, r * rec_fade_LUT_get(self->fade_phase_w) );
-                    lut = pre_fade_LUT_get( mphase );
+                    //lut = pre_fade_LUT_get( mphase );
 
                     //xf = 1.0 + lut*(p - 1.0);
                     //ihead_pre_level( hA, xf);
