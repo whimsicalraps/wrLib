@@ -278,14 +278,20 @@ void ihead_fade_poke_v( ihead_fade_t*  self, buffer_t* buf
                     // fade out
                     ihead_rec_level( hB, r * rec_fade_LUT_get( mphase ) );
                     float lut = pre_fade_LUT_get(self->fade_phase_w);
-                    float xf = 1.0 + lut*(p - 1.0);
-                    ihead_pre_level( hB, xf);
+
+                    //float xf = 1.0 + lut*(p - 1.0);
+                    //ihead_pre_level( hB, xf);
+                    ihead_pre_level( hB, p);
+
                     ihead_poke( hB, buf, motion[i], io[i] );
                     // fade in
                     ihead_rec_level( hA, r * rec_fade_LUT_get(self->fade_phase_w) );
                     lut = pre_fade_LUT_get( mphase );
-                    xf = 1.0 + lut*(p - 1.0);
-                    ihead_pre_level( hA, xf);
+
+                    //xf = 1.0 + lut*(p - 1.0);
+                    //ihead_pre_level( hA, xf);
+                    ihead_pre_level( hA, p);
+
                     ihead_poke( hA, buf, motion[i], io[i] );
                 } else { // short delay times have no rec-fade
                     // fade out
